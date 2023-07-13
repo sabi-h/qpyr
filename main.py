@@ -17,7 +17,30 @@ def get_best_mode(data):
         raise ValueError('Mode not supported')
 
 
+def get_segment(data, mode):
+    mode_segment = {"numeric": "0001", "alphanumeric": "0010", "byte": "0100"}[mode]
+
+    data_segment = ''
+    for char in data:
+        char_bits = bin(ord(char))[2:].zfill(8)
+        data_segment += char_bits
+
+    char_count_segment = bin(len(data))[2:].zfill(8)
+    terimator_segment = '0000'
+
+    return mode_segment + char_count_segment + data_segment + terimator_segment
+
+
+def main(data: str):
+    mode = get_best_mode(data)
+    segment = get_segment(data, mode)
+
+
 if __name__ == '__main__':
-    data = "omegaseed.co.uk"
+    data = "Hello, world! 123"
+
     mode = get_best_mode(data)
     print('Best mode:', mode)
+
+    segment = get_segment(data, mode)
+    print('Data segment:', segment)
