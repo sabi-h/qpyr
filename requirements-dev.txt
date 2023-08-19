@@ -3,3 +3,4 @@ packaging==23.1
 pluggy==1.2.0
 pytest==7.4.0
 reedsolo==1.7.0
+numpy==1.25.2

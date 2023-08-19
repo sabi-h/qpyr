@@ -1,7 +1,9 @@
-from typing import Dict, List
+import binascii
 import re
+from typing import Dict, List
 
-from reedsolo import RSCodec, ReedSolomonError
+from reedsolo import ReedSolomonError, RSCodec
+import reedsolomon as rs
 
 
 VERSION_CAPACITIES_BY_ECC_MAPPING = {
@@ -12,17 +14,21 @@ VERSION_CAPACITIES_BY_ECC_MAPPING = {
         "3": (70, 55, 15),
         "4": (100, 80, 20),
         "5": (134, 108, 26),
+    },
+    "HIGH": {
+        # verion: (total_capacity, data_capacity, ecc_capacity)
+        "1": (26, 7, 19),
     }
 }
 
-def _validate_ecc_level(ecc_level: str) -> str:
+def validate_ecc_level(ecc_level: str) -> str:
     supported_ecc_levels = VERSION_CAPACITIES_BY_ECC_MAPPING.keys()
     if ecc_level not in supported_ecc_levels:
         raise ValueError(f'Invalid ECC level. Must be one of {supported_ecc_levels}')
     return ecc_level
     
 
-def _get_best_mode(data: str) -> str:
+def get_best_mode(data: str) -> str:
     numeric_regex: re.Pattern = re.compile(r"[0-9]*")
     alphanumeric_regex: re.Pattern = re.compile(r"[A-Z0-9 $%*+./:-]*")
     is_byte = lambda data: all(ord(char) < 256 for char in data) # ISO-8859-1 characters
@@ -37,7 +43,7 @@ def _get_best_mode(data: str) -> str:
         raise ValueError('Mode not supported')
 
 
-def _get_segment_data(data):
+def get_segment_data(data):
     data_segment = ''
     for char in data:
         char_bits = bin(ord(char))[2:].zfill(8)
@@ -45,24 +51,24 @@ def _get_segment_data(data):
     return data_segment
 
 
-def _get_segment_mode(mode):
+def get_segment_mode(mode):
     return {"numeric": "0001", "alphanumeric": "0010", "byte": "0100"}[mode]
 
 
-def _get_segment_character_count(data):
+def get_segment_character_count(data):
     return bin(len(data))[2:].zfill(8)
 
 
-def _get_segment_terminator() -> str:
+def get_segment_terminator() -> str:
     return '0000'
 
 
-def _get_segment(segments: list[str]):
+def get_segment(segments: list[str]):
     return ''.join(segments)
 
 
-def _get_best_version(segment: str, ecc_level: str) -> str:
-    data_codewords = len(segment) // 8
+def get_best_version(data_segment: str, ecc_level: str) -> str:
+    data_codewords = len(data_segment) // 8
     for version, capacities in VERSION_CAPACITIES_BY_ECC_MAPPING[ecc_level].items():
         data_capacity = capacities[1]
         if data_codewords <= data_capacity:
@@ -70,27 +76,44 @@ def _get_best_version(segment: str, ecc_level: str) -> str:
     raise ValueError('Data too long')
 
 
-def _get_data_with_ecc_codewords(data: str, version: str, ecc_level: str):
-    number_of_ecc_codewords = VERSION_CAPACITIES_BY_ECC_MAPPING[ecc_level][version][2]
-    data_bytes = bytearray(data, encoding="utf-8")
-    rsc = RSCodec(nsym=number_of_ecc_codewords)
-    encoded_message = rsc.encode(data_bytes)
-    return encoded_message
+def get_number_of_ecc_codewords(version: str, ecc_level: str):
+    return VERSION_CAPACITIES_BY_ECC_MAPPING[ecc_level][version][2]
 
 
 def _binary_str_to_hex(binary_str: str) -> str:
     """Splits binary string into 8-bit chunks and converts each chunk to hex."""
-    result = []
     binary_str_split: List[str] = [binary_str[i:i+8] for i in range(0, len(binary_str), 8)]
-    for binary_str in binary_str_split:
-        first_4_bits = hex(int(binary_str[:4], 2))[2:]
-        last_4_bits = hex(int(binary_str[4:], 2))[2:]
-        result.append(first_4_bits + last_4_bits)
-    return ' '.join(result)
+    hex_str = [hex(int(s, 2))[2:] for s in binary_str_split]
+    return ' '.join(hex_str)
 
 
-def _get_ecc_codewords(data: str, version: str, ecc_level: str):
-    pass
+def bytearray_to_binary(value: bytearray) -> str:
+    return ''.join(format(x, '08b') for x in value)
+
+
+def message_to_decimals(msg: str) -> List[int]:
+	data = []
+	if all(map(lambda x: isinstance(x, str), msg)):
+		function = ord
+	elif all(map(lambda x: isinstance(x, int), msg)):
+		function = int
+	else:
+		raise ValueError("Message must be a list of integers or a list of strings")
+	
+	data = list(map(function, str(msg)))
+	return data
+
+
+def numbers_to_hex(data: List[int]) -> str:
+    return " ".join(map(lambda x: hex(x)[2:], data))
+
+
+def str_to_hex(data: str) -> str:
+    return " ".join(map(lambda x: hex(ord(x))[2:], data))
+
+
+def str_to_decimals(data: str) -> str:
+    return " ".join(map(lambda x: str(ord(x)), data))
 
 
 def main(data: str, ecc_level: str = 'LOW'):
@@ -99,47 +122,40 @@ def main(data: str, ecc_level: str = 'LOW'):
     Args:
         data (str): data to encode
     """
-    ecc_level = _validate_ecc_level(ecc_level)
+    data = str(data)
+    print(
+        f'data: {data}',
+        f'decimal: {str_to_decimals(data)}',
+        f'hex: {str_to_hex(data)}',
+        sep='\n'
+    )
+    ecc_level = validate_ecc_level(ecc_level)
 
-    mode = _get_best_mode(data)
+    mode = get_best_mode(data)
     print('Best mode:', mode)
 
-    mode_segment = _get_segment_mode(mode)
-    chr_count_segment = _get_segment_character_count(data)
-    data_segment = _get_segment_data(data)
-    terminator_segment = _get_segment_terminator()
-    segment = _get_segment([mode_segment, chr_count_segment, data_segment, terminator_segment])
-    print('Data segment:', segment, "\nhex:", _binary_str_to_hex(segment))
+    mode_segment = get_segment_mode(mode)
+    chr_count_segment = get_segment_character_count(data)
+    data_segment = get_segment_data(data)
+    terminator_segment = get_segment_terminator()
+    segment = get_segment([mode_segment, chr_count_segment, data_segment, terminator_segment])
+    print('Data segment:', segment)
 
-    version = _get_best_version(segment, ecc_level)
+    version = get_best_version(data_segment, ecc_level)
     print('Best version:', version)
 
-    all_codewords = _get_data_with_ecc_codewords(data, version, ecc_level)
-    print('ECC codewords:', all_codewords) # "\nhex:", _binary_str_to_hex(all_codewords)
-
-    # segment_bytes = _to_bytes(segment)
-    # print('Segment bytes:', segment_bytes)
-
-    # hex_segment = _binary_to_hex(segment_bytes)
-    # print('Hex segment:', hex_segment)
-
-
-    # all_codewords_split = [all_codewords[i:i+8] for i in range(0, len(all_codewords), 8)]
-    # print('Codewords split:', all_codewords_split)
-
-    # for codeword in all_codewords_split:
-    #     hex_data = _binary_to_hex(all_codewords_split)
-    #     print('Hex data:', hex_data)
+    data_in_numeric = message_to_decimals(data)
+    number_of_ecc_codewords = get_number_of_ecc_codewords(version, ecc_level)
+    all_codewords = rs.encode(data_in_numeric, number_of_ecc_codewords)
+    print(f'data in numeric: {data_in_numeric}, ECC codewords: {all_codewords}')
 
 
 if __name__ == '__main__':
-    data = "Hello, world! 123"
-    # data = "Helloooo09daay"
-    print('Data:', data)
+    data = "wpp.com"
 
     # tests
-    assert _validate_ecc_level('LOW') == 'LOW'
-    assert _get_best_mode("Hello, world! 123") == 'byte'
-    assert _get_best_version("10101010"*43, "LOW") == "3"
+    assert validate_ecc_level('LOW') == 'LOW'
+    assert get_best_mode("Hello, world! 123") == 'byte'
+    assert get_best_version("10101010"*43, "LOW") == "3"
 
-    main(data, ecc_level='LOW') 
+    main(data, ecc_level='HIGH')
