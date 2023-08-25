@@ -3,6 +3,9 @@
 # https://www.nayuki.io/page/reed-solomon-error-correcting-code-decoder
 
 
+from typing import Iterable
+
+
 class BinaryField:
     """A Galois field of the form GF(2^n/mod). Each element of this kind of field is a
     polynomial of degree less than n where each monomial coefficient is either 0 or 1.
@@ -119,7 +122,7 @@ class ReedSolomon:
         # The number of values in each codeword, equal to message_len + ecc_len. Always at least 2.
         self.codeword_len = msglen + ecclen
 
-    def encode(self, message):
+    def encode(self, message) -> Iterable[int]:
         """Returns a new sequence representing the codeword produced by encoding the specified message.
         If the message has the correct length and all its values are
         valid in the field, then this method is guaranteed to succeed."""
@@ -141,7 +144,7 @@ class ReedSolomon:
                 eccpoly[j] = self.f.subtract(eccpoly[j], self.f.multiply(genpoly[j], factor))
 
         # Negate the remainder, then concatenate with message polynomial
-        return [self.f.negate(val) for val in eccpoly] + message
+        return message + [self.f.negate(val) for val in eccpoly]
 
     # Computes the generator polynomial by multiplying powers of the generator value:
     # genpoly(x) = (x - gen^0) * (x - gen^1) * ... * (x - gen^(ecclen-1)).
@@ -164,14 +167,14 @@ class ReedSolomon:
         return result
 
 
-def encode(msg: int | str, ecclen: int = 0):
+def encode(msg: int | str | list, ecclen: int = 0) -> Iterable[int]:
     """Encode a message into a codeword.
 
     Args:
-        msg (int|str): message to encode
+        msg (int|str|list): message to encode
         ecclen (int, optional): number of error correcting codewords. Defaults to length of message.
     """
-    msg_list = list(str(msg))
+    msg_list = list(str(msg)) if isinstance(msg, int | str) else msg
     ecclen = ecclen if ecclen > 0 else len(msg_list)
 
     if all(map(lambda x: isinstance(x, str), msg_list)):

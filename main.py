@@ -1,9 +1,8 @@
 import itertools
 import re
-from typing import Dict, List
+from typing import Dict, List, NewType
 
 import reedsolomon as rs
-
 
 VERSION_CAPACITIES_BY_ECC_MAPPING = {
     "LOW": {
@@ -19,6 +18,9 @@ VERSION_CAPACITIES_BY_ECC_MAPPING = {
         "1": (26, 9, 17),
     },
 }
+
+
+BinaryString = NewType("BinaryString", str)
 
 
 def validate_ecc_level(ecc_level: str) -> str:
@@ -140,18 +142,36 @@ def str_to_decimals(data: str) -> str:
     return " ".join(map(lambda x: str(ord(x)), data))
 
 
-def hexadecimal_to_binary(hex_value: str) -> str:
+def dec_to_binary(dec_value: int) -> str:
+    return bin(dec_value)[2:].zfill(8)
+
+
+def hex_to_binary(hex_value: str) -> str:
     return bin(int(hex_value, 16))[2:].zfill(8)
+
+
+def binary_to_dec(binary_value: str) -> int:
+    return int(binary_value, 2)
 
 
 def binary_to_hex(binary_value: str) -> str:
     return hex(int(binary_value, 2))[2:]
 
 
-def display_hex(hex_value: str) -> str:
-    indices = [i * 2 for i in range(len(hex_value) // 2)]
-    parts = [hex_value[i:j] for i, j in zip(indices, indices[1:] + [None])]
+def dec_to_hex(dec_value: int) -> str:
+    return hex(dec_value)[2:]
+
+
+def split_str_for_display(value: str, split_value: int) -> str:
+    indices = [i * split_value for i in range(len(value) // split_value)]
+    parts = [value[i:j] for i, j in zip(indices, indices[1:] + [None])]
     return " ".join(parts)
+
+
+def split_binary_str(value: str, split_value: int = 8) -> list:
+    indices = [i * split_value for i in range(len(value) // split_value)]
+    parts = [value[i:j] for i, j in zip(indices, indices[1:] + [None])]
+    return parts
 
 
 def main(data: str, ecc_level: str = "LOW"):
@@ -175,12 +195,19 @@ def main(data: str, ecc_level: str = "LOW"):
     terminator_segment = get_segment_terminator()
     segment = get_segment([mode_segment, chr_count_segment, data_segment, terminator_segment])
     segment = add_padding(segment, version, ecc_level)
-    print(f"segment in hex: {display_hex(binary_to_hex(segment))}")
+    print(f"segment: {segment}")
+    print(f"segment pretty: {split_str_for_display(segment, 8)}")
+    print(f"segment in hex: {split_str_for_display(binary_to_hex(segment), 2)}")
 
     number_of_ecc_codewords = get_number_of_ecc_codewords(version, ecc_level)
     print(f"Number of ECC codewords: {number_of_ecc_codewords}")
-    all_codewords = rs.encode(data, number_of_ecc_codewords)
-    print(f"codewords: {all_codewords}")
+    data_to_encode = list(map(binary_to_dec, split_binary_str(segment)))
+    all_codewords = rs.encode(data_to_encode, number_of_ecc_codewords)
+    print(f"all codewords: {all_codewords}")
+    print(f"all codewords in hex:", list(map(dec_to_hex, all_codewords)))
+
+    final_sequence = "".join(list(map(dec_to_binary, all_codewords)))
+    print(f"final sequence: {final_sequence}")
 
 
 if __name__ == "__main__":
@@ -191,4 +218,4 @@ if __name__ == "__main__":
     assert get_best_mode("Hello, world! 123") == "byte"
     assert get_best_version("10101010" * 43, "LOW") == "3"
 
-    main(data, ecc_level="HIGH")
+    main(data, ecc_level="LOW")
