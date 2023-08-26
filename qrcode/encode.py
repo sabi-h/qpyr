@@ -2,7 +2,7 @@ import itertools
 import re
 from typing import Dict, List, NewType
 
-import reedsolomon as rs
+import qrcode.reedsolomon as rs
 
 VERSION_CAPACITIES_BY_ECC_MAPPING = {
     "LOW": {
@@ -174,7 +174,7 @@ def split_binary_str(value: str, split_value: int = 8) -> list:
     return parts
 
 
-def main(data: str, ecc_level: str = "LOW"):
+def encode(data: str, ecc_level: str = "LOW"):
     """Create a QR code from data.
 
     Args:
@@ -207,7 +207,8 @@ def main(data: str, ecc_level: str = "LOW"):
     print(f"all codewords in hex:", list(map(dec_to_hex, all_codewords)))
 
     final_sequence = "".join(list(map(dec_to_binary, all_codewords)))
-    print(f"final sequence: {final_sequence}")
+    print(f"final sequence: {final_sequence}, length: {len(final_sequence)}")
+    return final_sequence
 
 
 if __name__ == "__main__":
@@ -218,4 +219,4 @@ if __name__ == "__main__":
     assert get_best_mode("Hello, world! 123") == "byte"
     assert get_best_version("10101010" * 43, "LOW") == "3"
 
-    main(data, ecc_level="LOW")
+    encode(data, ecc_level="LOW")
