@@ -1,9 +1,12 @@
 from functools import partial
-from typing import Dict, List
+from typing import Dict, List, Callable, TypeAlias, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
 from PIL import Image, ImageDraw
+
+
+CoordinateValueMap: TypeAlias = Dict[Tuple[int, int], int]
 
 np.set_printoptions(formatter={"all": lambda x: str(int(x))})  # type: ignore
 
@@ -100,30 +103,28 @@ def get_finder_pattern_module_c(top_left_row_index, top_left_col_index):
     return {**top_row, **right_col, **bottom_row, **left_col}
 
 
-def get_finder_pattern(grid_size: int = 21):
-    module_a_top_left = {(x, y): BLACK for x in range(2, 5) for y in range(2, 5)}
-    module_a_top_right = {(x, y): BLACK for x in range(2, 5) for y in range(grid_size - 5, grid_size - 2)}
-    module_a_bottom_left = {(x, y): BLACK for x in range(grid_size - 5, grid_size - 2) for y in range(2, 5)}
-    module_a = {**module_a_top_left, **module_a_top_right, **module_a_bottom_left}
-    module_b_size = 5
-    module_b_top_left = get_finder_pattern_module_b(top_left_row_index=1, top_left_col_index=1)
-    module_b_top_right = get_finder_pattern_module_b(
-        top_left_row_index=1, top_left_col_index=grid_size - module_b_size - 1
-    )
-    module_b_bottom_left = get_finder_pattern_module_b(
-        top_left_row_index=grid_size - module_b_size - 1, top_left_col_index=1
-    )
-    module_b = {**module_b_top_left, **module_b_top_right, **module_b_bottom_left}
+def finder_pattern_generator(row, col, grid_size):
+    result = {}
+    for r in range(-1, 8):
+        if row + r <= -1 or grid_size <= row + r:
+            continue
 
-    module_c_size = 7
-    module_c_top_left = get_finder_pattern_module_c(top_left_row_index=0, top_left_col_index=0)
-    module_c_top_right = get_finder_pattern_module_c(top_left_row_index=0, top_left_col_index=grid_size - module_c_size)
-    module_c_bottom_left = get_finder_pattern_module_c(
-        top_left_row_index=grid_size - module_c_size, top_left_col_index=0
-    )
-    module_c = {**module_c_top_left, **module_c_top_right, **module_c_bottom_left}
+        for c in range(-1, 8):
+            if col + c <= -1 or grid_size <= col + c:
+                continue
 
-    return {**module_a, **module_b, **module_c}
+            if (0 <= r <= 6 and c in {0, 6}) or (0 <= c <= 6 and r in {0, 6}) or (2 <= r <= 4 and 2 <= c <= 4):
+                result[(row + r, col + c)] = BLACK
+            else:
+                result[(row + r, col + c)] = WHITE
+    return result
+
+
+def get_finder_patterns(finder_pattern_generator: Callable[[int, int, int], CoordinateValueMap], grid_size) -> CoordinateValueMap:
+    top_left = finder_pattern_generator(0, 0, grid_size)
+    bottom_left = finder_pattern_generator(grid_size - 7, 0, grid_size)
+    top_right = finder_pattern_generator(0, grid_size - 7, grid_size)
+    return {**top_left, **bottom_left, **top_right}
 
 
 def get_seperator_pattern(grid_size):
@@ -144,6 +145,18 @@ def get_seperator_pattern(grid_size):
 
     result = {**top_left_row, **top_left_col, **top_right_row, **top_right_col, **bottom_right_row, **bottom_right_col}
     return result
+
+
+def add_quiet_zone(grid):
+    horizontal_zone = np.zeros((grid.shape[0], 1))
+    grid = np.hstack((grid, horizontal_zone))
+    grid = np.hstack((horizontal_zone, grid))
+
+    vertical_zone = np.zeros((1, grid.shape[1]))
+    grid = np.vstack((grid, vertical_zone))
+    grid = np.vstack((vertical_zone, grid))
+
+    return grid
 
 
 def override_grid(grid, indexes: Dict[tuple, int]):
@@ -186,24 +199,33 @@ def draw_grid_with_pil(grid: np.ndarray, cell_size: int = 20):
             x1, y1 = x0 + cell_size, y0 + cell_size
             cell_value = grid[i, j]
             cell_color = color_map.get(cell_value, "white")
-            draw.rectangle(((x0, y0), (x1, y1)), fill=cell_color)
+            draw.rectangle(((x0, y0), (x1, y1)), fill=cell_color, outline="black")
 
     img.show()
 
 
+def get_data_pattern(binary_string):
+    result = {}
+    for char in binary_string:
+        i, j = 0, 0
+        result[(i, j)] = char
+    return result
+
+
 def draw(binary_string: str, grid_size: int = 21):
     timing_pattern = get_timing_pattern(grid_size)
-    finder_pattern = get_finder_pattern(grid_size)
+    finder_patterns = get_finder_patterns(finder_pattern_generator, grid_size)
     seperator_pattern = get_seperator_pattern(grid_size)
 
     grid = np.full((grid_size, grid_size), -1)
 
     grid = override_grid(grid, timing_pattern)
-    grid = override_grid(grid, finder_pattern)
+    grid = override_grid(grid, finder_patterns)
     grid = override_grid(grid, seperator_pattern)
-    print(grid)
+    grid = add_quiet_zone(grid)
+    
     draw_grid_with_pil(grid)
 
 
 if __name__ == "__main__":
-    draw("011")
+    draw("011", grid_size=23)
