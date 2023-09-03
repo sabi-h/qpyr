@@ -8,7 +8,6 @@ from PIL import Image, ImageDraw
 
 CoordinateValueMap: TypeAlias = Dict[Tuple[int, int], int]
 
-np.set_printoptions(formatter={"all": lambda x: str(int(x))})  # type: ignore
 
 WHITE = 0
 BLACK = 1
@@ -19,14 +18,13 @@ def get_empty_grid(size: int = 21):
     return grid
 
 
-def get_timing_pattern(grid_size: int = 21) -> Dict[tuple, int]:
-    grid = np.zeros((grid_size, grid_size))
+def get_timing_pattern(grid_size: int = 21) -> CoordinateValueMap:
     fixed_row, fixed_col = 6, 6
     timing_pattern_row_black = {(fixed_row, x): BLACK for x in range(0, grid_size, 2)}
     timing_pattern_row_white = {(fixed_row, x): WHITE for x in range(1, grid_size, 2)}
     timing_pattern_col_black = {(x, fixed_col): BLACK for x in range(0, grid_size, 2)}
     timing_pattern_col_white = {(x, fixed_col): WHITE for x in range(1, grid_size, 2)}
-    result = {
+    result: CoordinateValueMap = {
         **timing_pattern_row_black,
         **timing_pattern_row_white,
         **timing_pattern_col_black,
@@ -43,67 +41,7 @@ def create_col(fixed_col_index, row_start, row_end, value):
     return {(row, fixed_col_index): value for row in range(row_start, row_end)}
 
 
-def get_finder_pattern_module_b(top_left_row_index, top_left_col_index):
-    module_size = 5
-    value = 2
-    top_row = create_row(
-        fixed_row_index=top_left_row_index,
-        col_start=top_left_col_index,
-        col_end=top_left_col_index + module_size,
-        value=WHITE,
-    )
-    bottom_row = create_row(
-        fixed_row_index=top_left_row_index + module_size - 1,
-        col_start=top_left_col_index,
-        col_end=top_left_col_index + module_size,
-        value=WHITE,
-    )
-    left_col = create_col(
-        fixed_col_index=top_left_col_index,
-        row_start=top_left_row_index,
-        row_end=top_left_row_index + module_size,
-        value=WHITE,
-    )
-    right_col = create_col(
-        fixed_col_index=top_left_col_index + module_size - 1,
-        row_start=top_left_row_index,
-        row_end=top_left_row_index + module_size,
-        value=WHITE,
-    )
-    return {**top_row, **right_col, **bottom_row, **left_col}
-
-
-def get_finder_pattern_module_c(top_left_row_index, top_left_col_index):
-    module_size = 7
-    value = 1
-    top_row = create_row(
-        fixed_row_index=top_left_row_index,
-        col_start=top_left_col_index,
-        col_end=top_left_col_index + module_size,
-        value=value,
-    )
-    bottom_row = create_row(
-        fixed_row_index=top_left_row_index + module_size - 1,
-        col_start=top_left_col_index,
-        col_end=top_left_col_index + module_size,
-        value=value,
-    )
-    left_col = create_col(
-        fixed_col_index=top_left_col_index,
-        row_start=top_left_row_index,
-        row_end=top_left_row_index + module_size,
-        value=value,
-    )
-    right_col = create_col(
-        fixed_col_index=top_left_col_index + module_size - 1,
-        row_start=top_left_row_index,
-        row_end=top_left_row_index + module_size,
-        value=value,
-    )
-    return {**top_row, **right_col, **bottom_row, **left_col}
-
-
-def finder_pattern_generator(row, col, grid_size):
+def finder_pattern_generator(row, col, grid_size) -> CoordinateValueMap:
     result = {}
     for r in range(-1, 8):
         if row + r <= -1 or grid_size <= row + r:
@@ -120,14 +58,16 @@ def finder_pattern_generator(row, col, grid_size):
     return result
 
 
-def get_finder_patterns(finder_pattern_generator: Callable[[int, int, int], CoordinateValueMap], grid_size) -> CoordinateValueMap:
+def get_finder_patterns(
+    finder_pattern_generator: Callable[[int, int, int], CoordinateValueMap], grid_size
+) -> CoordinateValueMap:
     top_left = finder_pattern_generator(0, 0, grid_size)
     bottom_left = finder_pattern_generator(grid_size - 7, 0, grid_size)
     top_right = finder_pattern_generator(0, grid_size - 7, grid_size)
     return {**top_left, **bottom_left, **top_right}
 
 
-def get_seperator_pattern(grid_size):
+def get_seperator_pattern(grid_size) -> CoordinateValueMap:
     length = 8
     length_index = length - 1
 
@@ -204,18 +144,34 @@ def draw_grid_with_pil(grid: np.ndarray, cell_size: int = 20):
     img.show()
 
 
-def get_data_pattern(binary_string):
+def get_data_pattern(binary_string) -> CoordinateValueMap:
     result = {}
-    for char in binary_string:
-        i, j = 0, 0
-        result[(i, j)] = char
     return result
+
+
+def get_format_information(grid_size: int) -> CoordinateValueMap:
+    """Apply after masking."""
+    ecl_binary_indicator_mapping = {"L": "01", "M": "00", "Q": "11", "H": "10"}
+    format_information_mask = "101010000010010"
+    return {}
+
+
+def get_version_information(version: int) -> CoordinateValueMap:
+    """Apply after masking."""
+    if version <= 6:
+        return {}
+    else:
+        # TODO: TO BE IMPLEMENTED - it should return non-empty dict.
+        raise NotImplementedError("Currently only versions below 7 are supported.")
 
 
 def draw(binary_string: str, grid_size: int = 21):
     timing_pattern = get_timing_pattern(grid_size)
     finder_patterns = get_finder_patterns(finder_pattern_generator, grid_size)
     seperator_pattern = get_seperator_pattern(grid_size)
+    data_pattern = get_data_pattern(grid_size)
+    format_information = get_format_information(grid_size)
+    version_information = get_version_information(grid_size)
 
     grid = np.full((grid_size, grid_size), -1)
 
@@ -223,7 +179,7 @@ def draw(binary_string: str, grid_size: int = 21):
     grid = override_grid(grid, finder_patterns)
     grid = override_grid(grid, seperator_pattern)
     grid = add_quiet_zone(grid)
-    
+
     draw_grid_with_pil(grid)
 
 
