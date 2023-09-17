@@ -1,13 +1,15 @@
 from functools import partial
-from typing import Dict, List, Callable, TypeAlias, Tuple
+from typing import Dict, List, Callable, Literal, TypeAlias, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
 from PIL import Image, ImageDraw
 
+from qrcode.utils import convert_to_version, convert_to_grid_size
+from qrcode.encode import encode
 
 CoordinateValueMap: TypeAlias = Dict[Tuple[int, int], int]
-
+ErrorCorrectionLevels = Literal["L", "M", "Q", "H"]
 
 WHITE = 0
 BLACK = 1
@@ -129,10 +131,8 @@ def draw_grid_with_pil(grid: np.ndarray, cell_size: int = 20):
     img = Image.new("RGB", (img_size, img_size), "lightgray")
     draw = ImageDraw.Draw(img)
 
-    # Define the colors
     color_map = {0: "white", 1: "black", -1: "lightgray"}
 
-    # Loop through the grid and fill in the colors
     for i in range(grid.shape[0]):  # Rows
         for j in range(grid.shape[1]):  # Columns
             x0, y0 = j * cell_size, i * cell_size  # Corrected here
@@ -144,12 +144,48 @@ def draw_grid_with_pil(grid: np.ndarray, cell_size: int = 20):
     img.show()
 
 
-def get_data_pattern(binary_string) -> CoordinateValueMap:
-    result = {}
+def iterate_over_grid(grid_size):
+    """Iterates over all grid cells in zig-zag pattern and returns an iterator of tuples (row, col)."""
+    result = []
+    up = True
+    for column in range(grid_size - 1, 0, -2):
+        if column <= 6:  # skip column 6 because of timing pattern
+            column -= 1
+
+        if up:
+            row = 20
+        else:
+            row = 0
+
+        for _ in range(grid_size):
+            for col in (column, column - 1):
+                result.append((row, col))
+            if up:
+                row -= 1
+            else:
+                row += 1
+        if up:
+            up = False
+        else:
+            up = True
     return result
 
 
-def get_format_information(grid_size: int) -> CoordinateValueMap:
+def get_data_pattern(binary_str, grid, grid_size):
+    row_col_iter = iterate_over_grid(grid_size)
+    for row, col in row_col_iter:
+        print(row, col)
+        if not binary_str:
+            break
+        if grid[row][col] == -1:
+            grid[row][col] = binary_str[0]
+            binary_str = binary_str[1:]
+        else:
+            continue
+    draw_grid_with_pil(grid)
+
+
+def get_format_information(ecc_level: ErrorCorrectionLevels) -> CoordinateValueMap:
     """Apply after masking."""
     ecl_binary_indicator_mapping = {"L": "01", "M": "00", "Q": "11", "H": "10"}
     format_information_mask = "101010000010010"
@@ -165,23 +201,29 @@ def get_version_information(version: int) -> CoordinateValueMap:
         raise NotImplementedError("Currently only versions below 7 are supported.")
 
 
-def draw(binary_string: str, grid_size: int = 21):
+def draw(binary_string: str, version):
+    ecc_level = "L"
+    grid_size = convert_to_grid_size(version)
+
     timing_pattern = get_timing_pattern(grid_size)
     finder_patterns = get_finder_patterns(finder_pattern_generator, grid_size)
     seperator_pattern = get_seperator_pattern(grid_size)
-    data_pattern = get_data_pattern(grid_size)
-    format_information = get_format_information(grid_size)
-    version_information = get_version_information(grid_size)
 
-    grid = np.full((grid_size, grid_size), -1)
+    # format_information = get_format_information(ecc_level)
+    # version_information = get_version_information(version)
+
+    grid = np.full((grid_size, grid_size), -1, dtype=int)
 
     grid = override_grid(grid, timing_pattern)
     grid = override_grid(grid, finder_patterns)
     grid = override_grid(grid, seperator_pattern)
-    grid = add_quiet_zone(grid)
-
     draw_grid_with_pil(grid)
+
+    data_pattern = get_data_pattern(binary_string, grid, grid_size)
+
+    grid = add_quiet_zone(grid)
 
 
 if __name__ == "__main__":
-    draw("011", grid_size=23)
+    binary_str = encode("hello", ecc_level="LOW")
+    draw(binary_str, version=1)
