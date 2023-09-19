@@ -173,6 +173,7 @@ def iterate_over_grid(grid_size):
 
 
 def get_data_pattern(binary_str, grid, grid_size):
+    # TODO: Implement this function.
     row_col_iter = iterate_over_grid(grid_size)
     for row, col in row_col_iter:
         print(row, col)
@@ -187,6 +188,7 @@ def get_data_pattern(binary_str, grid, grid_size):
 
 
 def get_format_information(ecc_level: ErrorCorrectionLevels) -> CoordinateValueMap:
+    # TODO: Implement this function.
     """Apply after masking."""
     ecl_binary_indicator_mapping = {"L": "01", "M": "00", "Q": "11", "H": "10"}
     format_information_mask = "101010000010010"
@@ -208,6 +210,7 @@ def get_dummy_format_information(grid_size) -> CoordinateValueMap:
 
 
 def get_version_information(version: int) -> CoordinateValueMap:
+    # TODO: Maybe implement this function.
     """Apply after masking."""
     if version <= 6:
         return {}
