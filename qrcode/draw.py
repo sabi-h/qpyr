@@ -13,6 +13,7 @@ ErrorCorrectionLevels = Literal["L", "M", "Q", "H"]
 
 WHITE = 0
 BLACK = 1
+DUMMY_VALUE = -2
 
 
 def get_empty_grid(size: int = 21):
@@ -131,7 +132,7 @@ def draw_grid_with_pil(grid: np.ndarray, cell_size: int = 20):
     img = Image.new("RGB", (img_size, img_size), "lightgray")
     draw = ImageDraw.Draw(img)
 
-    color_map = {0: "white", 1: "black", -1: "lightgray"}
+    color_map = {0: "white", 1: "black", -1: "lightgray", -2: "darkgray"}
 
     for i in range(grid.shape[0]):  # Rows
         for j in range(grid.shape[1]):  # Columns
@@ -192,6 +193,20 @@ def get_format_information(ecc_level: ErrorCorrectionLevels) -> CoordinateValueM
     return {}
 
 
+def get_dummy_format_information(grid_size) -> CoordinateValueMap:
+    result = {}
+    for col in range(grid_size):
+        if (col <= 7) or (col >= grid_size - 8):
+            result[(row := 8, col)] = DUMMY_VALUE
+
+    for row in range(grid_size):
+        if row <= 8 or row >= grid_size - 8:
+            result[(row, col := 8)] = DUMMY_VALUE
+
+    result[(grid_size - 8, 8)] = BLACK
+    return result
+
+
 def get_version_information(version: int) -> CoordinateValueMap:
     """Apply after masking."""
     if version <= 6:
@@ -205,15 +220,17 @@ def draw(binary_string: str, version):
     ecc_level = "L"
     grid_size = convert_to_grid_size(version)
 
-    timing_pattern = get_timing_pattern(grid_size)
+    dummy_format_information = get_dummy_format_information(grid_size)
     finder_patterns = get_finder_patterns(finder_pattern_generator, grid_size)
     seperator_pattern = get_seperator_pattern(grid_size)
+    timing_pattern = get_timing_pattern(grid_size)
 
     # format_information = get_format_information(ecc_level)
     # version_information = get_version_information(version)
 
     grid = np.full((grid_size, grid_size), -1, dtype=int)
 
+    grid = override_grid(grid, dummy_format_information)
     grid = override_grid(grid, timing_pattern)
     grid = override_grid(grid, finder_patterns)
     grid = override_grid(grid, seperator_pattern)
