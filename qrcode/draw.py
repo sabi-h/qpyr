@@ -8,8 +8,15 @@ from PIL import Image, ImageDraw
 from qrcode.utils import convert_to_version, convert_to_grid_size
 from qrcode.encode import encode
 
+"""
+TODO: 
+1. Finish data placement
+2. Finish masking
+3. Finish format information
+"""
 CoordinateValueMap: TypeAlias = Dict[Tuple[int, int], int]
 ErrorCorrectionLevels = Literal["L", "M", "Q", "H"]
+
 
 WHITE = 0
 BLACK = 1
