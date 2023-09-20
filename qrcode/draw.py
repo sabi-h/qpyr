@@ -20,6 +20,7 @@ ErrorCorrectionLevels = Literal["L", "M", "Q", "H"]
 
 WHITE = 0
 BLACK = 1
+DEFAULT_VALUE = -1
 DUMMY_VALUE = -2
 
 
@@ -121,13 +122,8 @@ def draw_grid_with_pil(grid: np.ndarray, cell_size: int = 20):
     Draw a grid using PIL based on a 2D numpy array.
 
     Parameters:
-    - grid: A 2D numpy array of shape (n, n) containing 0, 1, or -1.
+    - grid: A 2D numpy array of shape (n, n) containing 0, 1, -1, -2.
     - cell_size: The size of each cell in the grid in pixels.
-
-    The function will color the cells as follows:
-    - 0 will be white
-    - 1 will be black
-    - -1 will be light gray
     """
 
     # Validate the shape of the grid
@@ -139,7 +135,7 @@ def draw_grid_with_pil(grid: np.ndarray, cell_size: int = 20):
     img = Image.new("RGB", (img_size, img_size), "lightgray")
     draw = ImageDraw.Draw(img)
 
-    color_map = {0: "white", 1: "black", -1: "lightgray", -2: "darkgray"}
+    color_map = {WHITE: "white", BLACK: "black", DEFAULT_VALUE: "lightgray", DUMMY_VALUE: "darkgray"}
 
     for i in range(grid.shape[0]):  # Rows
         for j in range(grid.shape[1]):  # Columns
@@ -152,7 +148,7 @@ def draw_grid_with_pil(grid: np.ndarray, cell_size: int = 20):
     img.show()
 
 
-def iterate_over_grid(grid_size):
+def iterate_over_grid(grid_size) -> List[Tuple[int, int]]:
     """Iterates over all grid cells in zig-zag pattern and returns an iterator of tuples (row, col)."""
     result = []
     up = True
@@ -179,19 +175,18 @@ def iterate_over_grid(grid_size):
     return result
 
 
-def get_data_pattern(binary_str, grid, grid_size):
-    # TODO: Implement this function.
-    row_col_iter = iterate_over_grid(grid_size)
-    for row, col in row_col_iter:
-        print(row, col)
+def get_codeword_placement(binary_str, grid, grid_iterator) -> CoordinateValueMap:
+    result = {}
+    for row, col in grid_iterator:
         if not binary_str:
             break
         if grid[row][col] == -1:
-            grid[row][col] = binary_str[0]
+            # grid[row][col] = binary_str[0]
+            result[(row, col)] = binary_str[0]
             binary_str = binary_str[1:]
         else:
             continue
-    draw_grid_with_pil(grid)
+    return result
 
 
 def get_format_information(ecc_level: ErrorCorrectionLevels) -> CoordinateValueMap:
@@ -244,11 +239,13 @@ def draw(binary_string: str, version):
     grid = override_grid(grid, timing_pattern)
     grid = override_grid(grid, finder_patterns)
     grid = override_grid(grid, seperator_pattern)
-    draw_grid_with_pil(grid)
 
-    data_pattern = get_data_pattern(binary_string, grid, grid_size)
+    grid_iterator = iterate_over_grid(grid_size)
+    codeword_placement = get_codeword_placement(binary_string, grid, grid_iterator)
+    grid = override_grid(grid, codeword_placement)
 
     grid = add_quiet_zone(grid)
+    draw_grid_with_pil(grid)
 
 
 if __name__ == "__main__":

@@ -217,7 +217,6 @@ def encode(data: str, ecc_level: str = "LOW"):
     print(f"final sequence: {final_sequence}, length: {len(final_sequence)}")
 
     masking_functions = [get_mask_func(i) for i in range(8)]
-    print(masking_functions)
     return final_sequence
 
 
