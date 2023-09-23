@@ -264,7 +264,7 @@ def draw(binary_string: str, version):
         # get_mask_penalty_points(masked_grid)
 
     grid = add_quiet_zone(grid)
-    # draw_grid_with_pil(grid)
+    draw_grid_with_pil(grid)
 
 
 if __name__ == "__main__":
