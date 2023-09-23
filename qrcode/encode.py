@@ -3,7 +3,7 @@ import re
 from typing import Dict, List, NewType
 
 import qrcode.reedsolomon as rs
-from qrcode.utils import get_mask_func
+from qrcode.utils import get_masks
 
 VERSION_CAPACITIES_BY_ECC_MAPPING = {
     "LOW": {
@@ -175,12 +175,6 @@ def split_binary_str(value: str, split_value: int = 8) -> list:
     return parts
 
 
-def get_best_mask_pattern(data: str) -> int:
-    """Returns the best mask pattern for the given data."""
-
-    return 0
-
-
 def encode(data: str, ecc_level: str = "LOW"):
     """Create a QR code from data.
 
@@ -216,7 +210,6 @@ def encode(data: str, ecc_level: str = "LOW"):
     final_sequence = "".join(list(map(dec_to_binary, all_codewords)))
     print(f"final sequence: {final_sequence}, length: {len(final_sequence)}")
 
-    masking_functions = [get_mask_func(i) for i in range(8)]
     return final_sequence
 
 

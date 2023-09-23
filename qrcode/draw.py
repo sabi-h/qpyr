@@ -1,22 +1,21 @@
 from functools import partial
-from typing import Dict, List, Callable, Literal, TypeAlias, Tuple
+from typing import Callable, Dict, List, Literal, Tuple, TypeAlias
 
 import numpy as np
 from numpy.typing import NDArray
 from PIL import Image, ImageDraw
 
-from qrcode.utils import convert_to_version, convert_to_grid_size
+import qrcode.reedsolomon as rs
 from qrcode.encode import encode
+from qrcode.types import CoordinateValueMap, ErrorCorrectionLevels
+from qrcode.utils import convert_to_grid_size, convert_to_version, get_mask_penalty_points, get_masks
 
 """
 TODO: 
-1. Finish data placement
-2. Finish masking
-3. Finish format information
+- Format information
+- Mask penalty points 
+- Use bytesarray instead of string
 """
-CoordinateValueMap: TypeAlias = Dict[Tuple[int, int], int]
-ErrorCorrectionLevels = Literal["L", "M", "Q", "H"]
-
 
 WHITE = 0
 BLACK = 1
@@ -181,7 +180,6 @@ def get_codeword_placement(binary_str, grid, grid_iterator) -> CoordinateValueMa
         if not binary_str:
             break
         if grid[row][col] == -1:
-            # grid[row][col] = binary_str[0]
             result[(row, col)] = binary_str[0]
             binary_str = binary_str[1:]
         else:
@@ -189,11 +187,16 @@ def get_codeword_placement(binary_str, grid, grid_iterator) -> CoordinateValueMa
     return result
 
 
-def get_format_information(ecc_level: ErrorCorrectionLevels) -> CoordinateValueMap:
-    # TODO: Implement this function.
-    """Apply after masking."""
+def get_format_information(
+    ecc_level: ErrorCorrectionLevels,
+    mask_reference: str,
+) -> CoordinateValueMap:
+    mask = "101010000010010"
     ecl_binary_indicator_mapping = {"L": "01", "M": "00", "Q": "11", "H": "10"}
-    format_information_mask = "101010000010010"
+    binary_indicator = ecl_binary_indicator_mapping[ecc_level]
+    data = binary_indicator + mask_reference
+    print(data)
+    # error_correction = rs.encode(data, 10) # TODO: implement this - currently wrong
     return {}
 
 
@@ -211,9 +214,15 @@ def get_dummy_format_information(grid_size) -> CoordinateValueMap:
     return result
 
 
+def apply_mask(mask: Callable, data: CoordinateValueMap) -> CoordinateValueMap:
+    result = {}
+    for coordinate, value in data.items():
+        i, j = coordinate
+        result[(i, j)] = mask(i, j) ^ int(value)  # int(value) may not be needed if value already int
+    return result
+
+
 def get_version_information(version: int) -> CoordinateValueMap:
-    # TODO: Maybe implement this function.
-    """Apply after masking."""
     if version <= 6:
         return {}
     else:
@@ -225,13 +234,12 @@ def draw(binary_string: str, version):
     ecc_level = "L"
     grid_size = convert_to_grid_size(version)
 
+    version_information = get_version_information(version)
+
     dummy_format_information = get_dummy_format_information(grid_size)
     finder_patterns = get_finder_patterns(finder_pattern_generator, grid_size)
     seperator_pattern = get_seperator_pattern(grid_size)
     timing_pattern = get_timing_pattern(grid_size)
-
-    # format_information = get_format_information(ecc_level)
-    # version_information = get_version_information(version)
 
     grid = np.full((grid_size, grid_size), -1, dtype=int)
 
@@ -239,15 +247,28 @@ def draw(binary_string: str, version):
     grid = override_grid(grid, timing_pattern)
     grid = override_grid(grid, finder_patterns)
     grid = override_grid(grid, seperator_pattern)
+    grid = override_grid(grid, version_information)
 
     grid_iterator = iterate_over_grid(grid_size)
     codeword_placement = get_codeword_placement(binary_string, grid, grid_iterator)
     grid = override_grid(grid, codeword_placement)
 
+    masks = get_masks()
+    for mask, mask_ref in masks:
+        masked_codewords = apply_mask(mask, codeword_placement)
+        masked_grid = override_grid(grid, masked_codewords)
+
+        format_information = get_format_information(ecc_level, mask_ref)
+        # grid = override_grid(format_information)
+
+        # get_mask_penalty_points(masked_grid)
+
     grid = add_quiet_zone(grid)
-    draw_grid_with_pil(grid)
+    # draw_grid_with_pil(grid)
 
 
 if __name__ == "__main__":
+    from pprint import pprint
+
     binary_str = encode("hello", ecc_level="LOW")
     draw(binary_str, version=1)
