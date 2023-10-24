@@ -7,14 +7,17 @@ from PIL import Image, ImageDraw
 
 import qrcode.reedsolomon as rs
 from qrcode.encode import encode
-from qrcode.types import CoordinateValueMap, ErrorCorrectionLevels
+from qrcode.custom_types import CoordinateValueMap, ECL
 from qrcode.utils import convert_to_grid_size, convert_to_version, get_mask_penalty_points, get_masks
 
 """
-TODO: 
-- Format information
-- Mask penalty points 
-- Use bytesarray instead of string
+TODO:
+
+next: Draw format information and then calculate mask penalty points on the entire grid.
+
+- Format information - DONE
+- Mask penalty points - NEXT
+- Use bytearray instead of strings?
 """
 
 WHITE = 0
@@ -187,17 +190,20 @@ def get_codeword_placement(binary_str, grid, grid_iterator) -> CoordinateValueMa
     return result
 
 
-def get_format_information(
-    ecc_level: ErrorCorrectionLevels,
-    mask_reference: str,
-) -> CoordinateValueMap:
-    mask = "101010000010010"
-    ecl_binary_indicator_mapping = {"L": "01", "M": "00", "Q": "11", "H": "10"}
-    binary_indicator = ecl_binary_indicator_mapping[ecc_level]
-    data = binary_indicator + mask_reference
-    print(data)
-    # error_correction = rs.encode(data, 10) # TODO: implement this - currently wrong
-    return {}
+def get_format_information(ecl: ECL, mask_reference: int) -> int:
+    ecl_binary_indicator_map = {ECL.L: 1, ECL.M: 0, ECL.Q: 3, ECL.H: 2}
+    genpoly = [1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1]
+    mask = 21522
+
+    ecl_binary_indicator = ecl_binary_indicator_map[ecl]
+    data = ecl_binary_indicator << 3 | mask_reference
+    data_binary_str: str = f"{data:05b}"
+    data_list = [int(x) for x in data_binary_str]
+
+    format_info = rs.encode(data_list, ecclen=10, genpoly=genpoly)
+    format_info = int("".join(map(str, format_info)), 2)
+    result = format_info ^ mask
+    return result
 
 
 def get_dummy_format_information(grid_size) -> CoordinateValueMap:
@@ -230,8 +236,7 @@ def get_version_information(version: int) -> CoordinateValueMap:
         raise NotImplementedError("Currently only versions below 7 are supported.")
 
 
-def draw(binary_string: str, version):
-    ecc_level = "L"
+def draw(binary_string: str, version: int, error_correction_level: ECL):
     grid_size = convert_to_grid_size(version)
 
     version_information = get_version_information(version)
@@ -254,21 +259,49 @@ def draw(binary_string: str, version):
     grid = override_grid(grid, codeword_placement)
 
     masks = get_masks()
-    for mask, mask_ref in masks:
+    best_mask_ref, lowest_penalty_points = (0, 100_000)  # arbitrary large number
+    for mask_reference, mask in enumerate(masks):
         masked_codewords = apply_mask(mask, codeword_placement)
         masked_grid = override_grid(grid, masked_codewords)
 
-        format_information = get_format_information(ecc_level, mask_ref)
+        format_information = get_format_information(error_correction_level, mask_reference)
+
+        continue
         # grid = override_grid(format_information)
 
-        # get_mask_penalty_points(masked_grid)
+        points = get_mask_penalty_points(masked_grid)
+        if points < lowest_penalty_points:
+            best_mask_ref, lowest_penalty_points = (mask_reference, points)
+
+    print("best_mask_ref, lowest_penalty_points", best_mask_ref, lowest_penalty_points)
+    best_mask = masks[best_mask_ref]
+    masked_codewords = apply_mask(best_mask, codeword_placement)
+    masked_grid = override_grid(grid, masked_codewords)
 
     grid = add_quiet_zone(grid)
-    draw_grid_with_pil(grid)
+    # draw_grid_with_pil(grid)
+
+
+def qr_check_format(fmt):
+    g = 0x537  # = 0b10100110111 in python 2.6+
+    for i in range(4, -1, -1):
+        if fmt & (1 << (i + 10)):
+            fmt ^= g << i
+    return fmt
 
 
 if __name__ == "__main__":
     from pprint import pprint
 
-    binary_str = encode("hello", ecc_level="LOW")
-    draw(binary_str, version=1)
+    ecl = ECL.M
+    binary_str = encode("hello", ecl=ecl)
+    # draw(binary_str, version=1, error_correction_level=ecl)
+
+    result_format_info = get_format_information(ECL.M, 5)
+    expected_format_info = "001010011011100"
+    print(result_format_info, expected_format_info)
+    assert result_format_info == expected_format_info
+
+    # format = 0b000111101011001
+    # fmt = (format << 10) + qr_check_format(format << 10)
+    # print(bin(fmt))

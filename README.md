@@ -1,3 +1,5 @@
-# qrcode
+# QR code
+
+## QR code Algotirhm
 
 

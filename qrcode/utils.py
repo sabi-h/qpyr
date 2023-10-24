@@ -1,7 +1,7 @@
 from typing import Callable
 import math
 
-from qrcode.types import CoordinateValueMap
+from qrcode.custom_types import CoordinateValueMap
 
 
 def convert_to_version(grid_size):
@@ -17,14 +17,14 @@ def get_masks():
     Return the mask function for the given mask pattern_reference.
     """
     pattern_reference_map = [
-        (lambda i, j: (i + j) % 2 == 0, "000"),
-        (lambda i, j: i % 2 == 0, "001"),
-        (lambda i, j: j % 3 == 0, "010"),
-        (lambda i, j: (i + j) % 3 == 0, "011"),
-        (lambda i, j: (math.floor(i / 2) + math.floor(j / 3)) % 2 == 0, "100"),
-        (lambda i, j: (i * j) % 2 + (i * j) % 3 == 0, "101"),
-        (lambda i, j: ((i * j) % 2 + (i * j) % 3) % 2 == 0, "110"),
-        (lambda i, j: ((i * j) % 3 + (i + j) % 2) % 2 == 0, "111"),
+        lambda i, j: (i + j) % 2 == 0,
+        lambda i, j: i % 2 == 0,
+        lambda i, j: j % 3 == 0,
+        lambda i, j: (i + j) % 3 == 0,
+        lambda i, j: (math.floor(i / 2) + math.floor(j / 3)) % 2 == 0,
+        lambda i, j: (i * j) % 2 + (i * j) % 3 == 0,
+        lambda i, j: ((i * j) % 2 + (i * j) % 3) % 2 == 0,
+        lambda i, j: ((i * j) % 3 + (i + j) % 2) % 2 == 0,
     ]
     return pattern_reference_map
 
@@ -46,5 +46,7 @@ def get_mask_penalty_points(grid) -> int:
 if __name__ == "__main__":
     assert isinstance(get_masks()[0], Callable)
     assert isinstance(get_masks()[7], Callable)
-    assert get_masks()[7][0](21, 21) == True
-    assert get_masks()[3](15, 14) == False
+
+    masks = get_masks()
+    assert masks[7](21, 21) == True
+    assert masks[3](15, 14) == False

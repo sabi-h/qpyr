@@ -3,7 +3,7 @@
 # https://www.nayuki.io/page/reed-solomon-error-correcting-code-decoder
 
 
-from typing import Iterable
+from typing import Iterable, List, Optional
 
 
 class BinaryField:
@@ -102,13 +102,16 @@ class ReedSolomon:
     to decode the codeword, and under some circumstances can reproduce the original message.
     This class is immutable and thread-safe, but the argument arrays passed into methods are not thread-safe."""
 
-    def __init__(self, field, gen, msglen, ecclen):
+    def __init__(self, field, gen, msglen, ecclen, genpoly=None):
         """Constructs a Reed-Solomon encoder-decoder with the specified field, generator, and lengths."""
         if msglen <= 0 or ecclen <= 0:
             raise ValueError("Invalid message or ECC length")
 
         # The field for message and codeword values, and for performing arithmetic operations on values.
         self.f = field
+
+        # Generator polynomial
+        self.genpoly = genpoly
 
         # An element of the field whose powers generate all the non-zero elements of the field.
         self.generator = gen
@@ -131,7 +134,7 @@ class ReedSolomon:
             raise ValueError("Invalid message length")
 
         # Make the generator polynomial (this doesn't depend on the message)
-        genpoly = self._make_generator_polynomial()
+        genpoly = self._make_generator_polynomial() if not self.genpoly else self.genpoly
 
         # Compute the remainder ((message(x) * x^ecclen) mod genpoly(x)) by performing polynomial division.
         # Process message bytes (polynomial coefficients) from the highest monomial power to the lowest power
@@ -164,10 +167,12 @@ class ReedSolomon:
                     result[j] = self.f.add(result[j - 1], result[j])
 
             genpow = self.f.multiply(self.generator, genpow)
+        # print(f"generator polynomial: {result}")
+        # return [1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1]
         return result
 
 
-def encode(msg: int | str | list, ecclen: int = 0) -> Iterable[int]:
+def encode(msg: int | str | list, ecclen: int = 0, genpoly: Optional[List[int]] = None) -> Iterable[int]:
     """Encode a message into a codeword.
 
     Args:
@@ -181,14 +186,20 @@ def encode(msg: int | str | list, ecclen: int = 0) -> Iterable[int]:
         msg_list = [ord(c) for c in msg_list]
 
     field = BinaryField(0x11D)
+    # field = BinaryField(2**10)
     generator = 0x02
     msglen = len(msg_list)
-    rs = ReedSolomon(field, generator, msglen, ecclen)
+    rs = ReedSolomon(field, generator, msglen, ecclen, genpoly)
 
     codeword = rs.encode(msg_list)
     return codeword
 
 
 if __name__ == "__main__":
-    msg = "hello"
-    encode(msg, ecclen=17)
+    # --- Format information encoding ---
+    msg = [0, 0, 1, 0, 1]
+    genpoly = [1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1]
+    codeword = encode(msg, ecclen=10, genpoly=genpoly)
+    print("codeword", codeword)
+    expected_result = msg + [0, 0, 1, 1, 0, 1, 1, 1, 0, 0]
+    assert codeword == expected_result

@@ -4,31 +4,31 @@ from typing import Dict, List, NewType
 
 import qrcode.reedsolomon as rs
 from qrcode.utils import get_masks
+from qrcode.custom_types import ECL
+
 
 VERSION_CAPACITIES_BY_ECC_MAPPING = {
-    "LOW": {
-        # verion: (total_capacity, data_capacity, ecc_capacity)
+    ECL.L: {
+        # verion: (total capacity, data capacity, error correction capacity)
         "1": (26, 19, 7),
         "2": (44, 34, 10),
         "3": (70, 55, 15),
         "4": (100, 80, 20),
         "5": (134, 108, 26),
     },
-    "HIGH": {
-        # verion: (total_capacity, data_capacity, ecc_capacity)
+    ECL.M: {
+        "1": (26, 16, 10),
+    },
+    ECL.Q: {
+        "1": (26, 13, 13),
+    },
+    ECL.H: {
         "1": (26, 9, 17),
     },
 }
 
 
 BinaryString = NewType("BinaryString", str)
-
-
-def validate_ecc_level(ecc_level: str) -> str:
-    supported_ecc_levels = VERSION_CAPACITIES_BY_ECC_MAPPING.keys()
-    if ecc_level not in supported_ecc_levels:
-        raise ValueError(f"Invalid ECC level. Must be one of {supported_ecc_levels}")
-    return ecc_level
 
 
 def get_best_mode(data: str) -> str:
@@ -70,17 +70,17 @@ def get_segment(segments: list[str]):
     return "".join(segments)
 
 
-def get_best_version(data_segment: str, ecc_level: str) -> str:
+def get_best_version(data_segment: str, ecl: ECL) -> str:
     data_codewords = len(data_segment) // 8
-    for version, capacities in VERSION_CAPACITIES_BY_ECC_MAPPING[ecc_level].items():
+    for version, capacities in VERSION_CAPACITIES_BY_ECC_MAPPING[ecl].items():
         data_capacity = capacities[1]
         if data_codewords <= data_capacity:
             return version
     raise ValueError("Data too long")
 
 
-def get_number_of_ecc_codewords(version: str, ecc_level: str) -> int:
-    return VERSION_CAPACITIES_BY_ECC_MAPPING[ecc_level][version][2]
+def get_number_of_ecc_codewords(version: str, ecl: ECL) -> int:
+    return VERSION_CAPACITIES_BY_ECC_MAPPING[ecl][version][2]
 
 
 def _binary_str_to_hex(binary_str: str) -> str:
@@ -115,13 +115,13 @@ def str_to_hex(data: str) -> str:
     return " ".join(map(lambda x: hex(ord(x))[2:], data))
 
 
-def add_padding(data: str, version: str, ecc_level: str) -> str:
+def add_padding(data: str, version: str, ecl: ECL) -> str:
     """Add padding to data segment.
 
     Args:
         data (str): data segment
         version (str): QR code version
-        ecc_level (str): error correction level
+        ecl (str): error correction level
 
     Returns:
         str: padded data segment
@@ -130,7 +130,7 @@ def add_padding(data: str, version: str, ecc_level: str) -> str:
     bit_padding_required = (lambda x: (8 - (x % 8)) % 8)(data_length)
     data = data + "0" * bit_padding_required
 
-    data_capacity = VERSION_CAPACITIES_BY_ECC_MAPPING[ecc_level][version][1]
+    data_capacity = VERSION_CAPACITIES_BY_ECC_MAPPING[ecl][version][1]
 
     redundant_bytes_required = ((data_capacity * 8) - len(data)) // 8
     padding_bytes = itertools.cycle(["11101100", "00010001"])
@@ -175,7 +175,7 @@ def split_binary_str(value: str, split_value: int = 8) -> list:
     return parts
 
 
-def encode(data: str, ecc_level: str = "LOW"):
+def encode(data: str, ecl: ECL):
     """Create a QR code from data.
 
     Args:
@@ -183,7 +183,6 @@ def encode(data: str, ecc_level: str = "LOW"):
     """
     data = str(data)
     print(f"data: {data}", f"decimal: {str_to_decimals(data)}", f"hex: {str_to_hex(data)}", sep="\n")
-    ecc_level = validate_ecc_level(ecc_level)
 
     mode = get_best_mode(data)
     print(f"Best mode: {mode}")
@@ -191,16 +190,16 @@ def encode(data: str, ecc_level: str = "LOW"):
     mode_segment = get_segment_mode(mode)
     chr_count_segment = get_segment_character_count(data)
     data_segment = get_segment_data(data)
-    version = get_best_version(data_segment, ecc_level)
+    version = get_best_version(data_segment, ecl)
     print(f"Best version:", version)
     terminator_segment = get_segment_terminator()
     segment = get_segment([mode_segment, chr_count_segment, data_segment, terminator_segment])
-    segment = add_padding(segment, version, ecc_level)
+    segment = add_padding(segment, version, ecl)
     print(f"segment: {segment}")
     print(f"segment pretty: {split_str_for_display(segment, 8)}")
     print(f"segment in hex: {split_str_for_display(binary_to_hex(segment), 2)}")
 
-    number_of_ecc_codewords = get_number_of_ecc_codewords(version, ecc_level)
+    number_of_ecc_codewords = get_number_of_ecc_codewords(version, ecl)
     print(f"Number of ECC codewords: {number_of_ecc_codewords}")
     data_to_encode = list(map(binary_to_dec, split_binary_str(segment)))
     all_codewords = rs.encode(data_to_encode, number_of_ecc_codewords)
@@ -216,9 +215,10 @@ def encode(data: str, ecc_level: str = "LOW"):
 if __name__ == "__main__":
     data = "hello"
 
-    # tests
-    assert validate_ecc_level("LOW") == "LOW"
-    assert get_best_mode("Hello, world! 123") == "byte"
-    assert get_best_version("10101010" * 43, "LOW") == "3"
+    ecl = ECL.L
 
-    encode(data, ecc_level="LOW")
+    # tests
+    assert get_best_mode("Hello, world! 123") == "byte"
+    assert get_best_version("10101010" * 43, ecl) == "3"
+
+    encode(data, ecl=ecl)

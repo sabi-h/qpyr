@@ -1,5 +1,12 @@
+from enum import Enum
 from typing import Dict, Literal, Tuple, TypeAlias
 
 
 CoordinateValueMap: TypeAlias = Dict[Tuple[int, int], int]
-ErrorCorrectionLevels = Literal["L", "M", "Q", "H"]
+
+
+class ECL(Enum):
+    L = "L"
+    M = "M"
+    Q = "Q"
+    H = "H"
