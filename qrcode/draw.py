@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Callable, Dict, List, Literal, Tuple, TypeAlias
+from typing import Callable, Dict, List, Literal, Optional, Tuple, TypeAlias
 
 import numpy as np
 from numpy.typing import NDArray
@@ -7,15 +7,17 @@ from PIL import Image, ImageDraw
 
 import qrcode.reedsolomon as rs
 from qrcode.encode import encode
+from qrcode.constants import ecl_binary_indicator_map
 from qrcode.custom_types import CoordinateValueMap, ECL
 from qrcode.utils import convert_to_grid_size, convert_to_version, get_mask_penalty_points, get_masks
 
 """
 TODO:
 
-next: Draw format information and then calculate mask penalty points on the entire grid.
+next: calculate mask penalty points on the entire grid.
 
-- Format information - DONE
+- Get Format information - DONE
+- Draw Format information - NEXT
 - Mask penalty points - NEXT
 - Use bytearray instead of strings?
 """
@@ -137,7 +139,7 @@ def draw_grid_with_pil(grid: np.ndarray, cell_size: int = 20):
     img = Image.new("RGB", (img_size, img_size), "lightgray")
     draw = ImageDraw.Draw(img)
 
-    color_map = {WHITE: "white", BLACK: "black", DEFAULT_VALUE: "lightgray", DUMMY_VALUE: "darkgray"}
+    color_map = {WHITE: "white", BLACK: "black", DEFAULT_VALUE: "lightgray", DUMMY_VALUE: "red"}
 
     for i in range(grid.shape[0]):  # Rows
         for j in range(grid.shape[1]):  # Columns
@@ -191,19 +193,18 @@ def get_codeword_placement(binary_str, grid, grid_iterator) -> CoordinateValueMa
 
 
 def get_format_information(ecl: ECL, mask_reference: int) -> int:
-    ecl_binary_indicator_map = {ECL.L: 1, ECL.M: 0, ECL.Q: 3, ECL.H: 2}
-    genpoly = [1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1]
+    generator_polynomial = 1335
     mask = 21522
 
     ecl_binary_indicator = ecl_binary_indicator_map[ecl]
-    data = ecl_binary_indicator << 3 | mask_reference
-    data_binary_str: str = f"{data:05b}"
-    data_list = [int(x) for x in data_binary_str]
 
-    format_info = rs.encode(data_list, ecclen=10, genpoly=genpoly)
-    format_info = int("".join(map(str, format_info)), 2)
-    result = format_info ^ mask
-    return result
+    data: int = ecl_binary_indicator << 3 | mask_reference  # errCorrLvl is uint2, mask is uint3
+    rem: int = data
+    for _ in range(10):
+        rem = (rem << 1) ^ ((rem >> 9) * generator_polynomial)
+    bits: int = (data << 10 | rem) ^ mask  # uint15
+    assert bits >> 15 == 0
+    return bits
 
 
 def get_dummy_format_information(grid_size) -> CoordinateValueMap:
@@ -215,6 +216,35 @@ def get_dummy_format_information(grid_size) -> CoordinateValueMap:
     for row in range(grid_size):
         if row <= 8 or row >= grid_size - 8:
             result[(row, col := 8)] = DUMMY_VALUE
+
+    result[(grid_size - 8, 8)] = BLACK
+    return result
+
+
+def get_format_information_placement(grid_size, format_info: int = DUMMY_VALUE) -> CoordinateValueMap:
+    result = {}
+    if format_info == DUMMY_VALUE:
+        format_info_to_draw = [DUMMY_VALUE] * 15
+    else:
+        format_info_to_draw = [int(x) for x in bin(format_info)[2:]]
+
+    print(format_info_to_draw)
+    index = 0
+    for row in range(grid_size):
+        if (row <= 8) or (row >= grid_size - 8):
+            if row in (6, 13):
+                continue
+            print(f"{(row, col := 8)=}")
+            result[(row, col := 8)] = format_info_to_draw[index]
+            index += 1
+
+    index = 14
+    for col in range(grid_size):
+        if (col <= 7) or (col >= grid_size - 8):
+            if col == 6:
+                continue
+            result[(row := 8, col)] = format_info_to_draw[index]
+            index -= 1
 
     result[(grid_size - 8, 8)] = BLACK
     return result
@@ -264,10 +294,17 @@ def draw(binary_string: str, version: int, error_correction_level: ECL):
         masked_codewords = apply_mask(mask, codeword_placement)
         masked_grid = override_grid(grid, masked_codewords)
 
-        format_information = get_format_information(error_correction_level, mask_reference)
+        format_information = get_format_information(error_correction_level, mask_reference=0)
+        print(f"{format_information=}")
+        format_information_placement = get_format_information_placement(grid_size, format_information)
+        print(f"{format_information_placement.values()=}")
+        masked_grid = override_grid(masked_grid, format_information_placement)
+        # draw_grid_with_pil(masked_grid)
 
-        continue
+        return
+
         # grid = override_grid(format_information)
+        format_information = get_format_information(error_correction_level, mask_reference)
 
         points = get_mask_penalty_points(masked_grid)
         if points < lowest_penalty_points:
@@ -293,14 +330,12 @@ def qr_check_format(fmt):
 if __name__ == "__main__":
     from pprint import pprint
 
+    format_info = get_format_information(ECL.M, 5)
+    print(f"{format_info=}")
+
     ecl = ECL.M
     binary_str = encode("hello", ecl=ecl)
-    # draw(binary_str, version=1, error_correction_level=ecl)
-
-    result_format_info = get_format_information(ECL.M, 5)
-    expected_format_info = "001010011011100"
-    print(result_format_info, expected_format_info)
-    assert result_format_info == expected_format_info
+    draw(binary_str, version=1, error_correction_level=ecl)
 
     # format = 0b000111101011001
     # fmt = (format << 10) + qr_check_format(format << 10)

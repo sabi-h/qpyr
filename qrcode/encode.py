@@ -3,9 +3,10 @@ import re
 from typing import Dict, List, NewType
 
 import qrcode.reedsolomon as rs
-from qrcode.utils import get_masks
-from qrcode.custom_types import ECL
-
+from qrcode.constants import ecl_binary_indicator_map
+from qrcode.custom_types import ECL, ECLNumber
+from qrcode.reedsolomon import _add_ecc_and_interleave
+from qrcode.utils import bits_to_bytearray, get_masks
 
 VERSION_CAPACITIES_BY_ECC_MAPPING = {
     ECL.L: {
@@ -192,33 +193,31 @@ def encode(data: str, ecl: ECL):
     data_segment = get_segment_data(data)
     version = get_best_version(data_segment, ecl)
     print(f"Best version:", version)
+
     terminator_segment = get_segment_terminator()
     segment = get_segment([mode_segment, chr_count_segment, data_segment, terminator_segment])
     segment = add_padding(segment, version, ecl)
+
     print(f"segment: {segment}")
     print(f"segment pretty: {split_str_for_display(segment, 8)}")
     print(f"segment in hex: {split_str_for_display(binary_to_hex(segment), 2)}")
 
     number_of_ecc_codewords = get_number_of_ecc_codewords(version, ecl)
     print(f"Number of ECC codewords: {number_of_ecc_codewords}")
-    data_to_encode = list(map(binary_to_dec, split_binary_str(segment)))
-    all_codewords = rs.encode(data_to_encode, number_of_ecc_codewords)
-    print(f"all codewords: {all_codewords}")
-    print(f"all codewords in hex:", list(map(dec_to_hex, all_codewords)))
 
-    final_sequence = "".join(list(map(dec_to_binary, all_codewords)))
-    print(f"final sequence: {final_sequence}, length: {len(final_sequence)}")
+    data_to_encode = bits_to_bytearray(segment)
+    print(f"{data_to_encode=}")
 
-    return final_sequence
+    encoded_data = _add_ecc_and_interleave(version=int(version), ecl=ecl.name, data=data_to_encode)
+    print(f"{bytearray_to_binary(encoded_data)=}")
+    return encoded_data
 
 
 if __name__ == "__main__":
     data = "hello"
 
-    ecl = ECL.L
-
     # tests
     assert get_best_mode("Hello, world! 123") == "byte"
-    assert get_best_version("10101010" * 43, ecl) == "3"
+    assert get_best_version("10101010" * 43, ECL.L) == "3"
 
-    encode(data, ecl=ecl)
+    encode(data, ecl=ECL.M)
