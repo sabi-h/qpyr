@@ -6,7 +6,7 @@ import qrcode.reedsolomon as rs
 from qrcode.constants import ecl_binary_indicator_map
 from qrcode.custom_types import ECL, ECLNumber
 from qrcode.reedsolomon import _add_ecc_and_interleave
-from qrcode.utils import bits_to_bytearray, get_masks
+from qrcode.utils import bits_to_bytearray, bytearray_to_bits, get_masks
 
 VERSION_CAPACITIES_BY_ECC_MAPPING = {
     ECL.L: {
@@ -210,7 +210,9 @@ def encode(data: str, ecl: ECL):
 
     encoded_data = _add_ecc_and_interleave(version=int(version), ecl=ecl.name, data=data_to_encode)
     print(f"{bytearray_to_binary(encoded_data)=}")
-    return encoded_data
+
+    all_bits = bytearray_to_bits(encoded_data)
+    return all_bits
 
 
 if __name__ == "__main__":

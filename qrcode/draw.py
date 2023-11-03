@@ -121,7 +121,7 @@ def override_grid(grid, indexes: Dict[tuple, int]):
     return grid
 
 
-def draw_grid_with_pil(grid: np.ndarray, cell_size: int = 20):
+def draw_grid_with_pil(grid: np.ndarray, cell_size: int = 20, outline: Optional[str] = None):
     """
     Draw a grid using PIL based on a 2D numpy array.
 
@@ -147,7 +147,7 @@ def draw_grid_with_pil(grid: np.ndarray, cell_size: int = 20):
             x1, y1 = x0 + cell_size, y0 + cell_size
             cell_value = grid[i, j]
             cell_color = color_map.get(cell_value, "white")
-            draw.rectangle(((x0, y0), (x1, y1)), fill=cell_color, outline="black")
+            draw.rectangle(((x0, y0), (x1, y1)), fill=cell_color, outline=outline)
 
     img.show()
 
@@ -196,7 +196,7 @@ def get_format_information(ecl: ECL, mask_reference: int) -> int:
     generator_polynomial = 1335
     mask = 21522
 
-    ecl_binary_indicator = ecl_binary_indicator_map[ecl]
+    ecl_binary_indicator = ecl_binary_indicator_map[ecl.value]
 
     data: int = ecl_binary_indicator << 3 | mask_reference  # errCorrLvl is uint2, mask is uint3
     rem: int = data
@@ -221,7 +221,7 @@ def get_dummy_format_information(grid_size) -> CoordinateValueMap:
     return result
 
 
-def get_format_information_placement(grid_size, format_info: int = DUMMY_VALUE) -> CoordinateValueMap:
+def get_format_placement(grid_size, format_info: int = DUMMY_VALUE) -> CoordinateValueMap:
     result = {}
     if format_info == DUMMY_VALUE:
         format_info_to_draw = [DUMMY_VALUE] * 15
@@ -229,22 +229,22 @@ def get_format_information_placement(grid_size, format_info: int = DUMMY_VALUE) 
         format_info_to_draw = [int(x) for x in bin(format_info)[2:]]
 
     print(format_info_to_draw)
-    index = 0
+    index = 14
     for row in range(grid_size):
         if (row <= 8) or (row >= grid_size - 8):
             if row in (6, 13):
                 continue
             print(f"{(row, col := 8)=}")
             result[(row, col := 8)] = format_info_to_draw[index]
-            index += 1
+            index -= 1
 
-    index = 14
+    index = 0
     for col in range(grid_size):
         if (col <= 7) or (col >= grid_size - 8):
             if col == 6:
                 continue
             result[(row := 8, col)] = format_info_to_draw[index]
-            index -= 1
+            index += 1
 
     result[(grid_size - 8, 8)] = BLACK
     return result
@@ -286,6 +286,7 @@ def draw(binary_string: str, version: int, error_correction_level: ECL):
 
     grid_iterator = iterate_over_grid(grid_size)
     codeword_placement = get_codeword_placement(binary_string, grid, grid_iterator)
+    print(f"{codeword_placement=}")
     grid = override_grid(grid, codeword_placement)
 
     masks = get_masks()
@@ -295,12 +296,10 @@ def draw(binary_string: str, version: int, error_correction_level: ECL):
         masked_grid = override_grid(grid, masked_codewords)
 
         format_information = get_format_information(error_correction_level, mask_reference=0)
-        print(f"{format_information=}")
-        format_information_placement = get_format_information_placement(grid_size, format_information)
-        print(f"{format_information_placement.values()=}")
+        format_information_placement = get_format_placement(grid_size, format_information)
         masked_grid = override_grid(masked_grid, format_information_placement)
-        # draw_grid_with_pil(masked_grid)
 
+        draw_grid_with_pil(add_quiet_zone(masked_grid))
         return
 
         # grid = override_grid(format_information)
@@ -316,15 +315,7 @@ def draw(binary_string: str, version: int, error_correction_level: ECL):
     masked_grid = override_grid(grid, masked_codewords)
 
     grid = add_quiet_zone(grid)
-    # draw_grid_with_pil(grid)
-
-
-def qr_check_format(fmt):
-    g = 0x537  # = 0b10100110111 in python 2.6+
-    for i in range(4, -1, -1):
-        if fmt & (1 << (i + 10)):
-            fmt ^= g << i
-    return fmt
+    draw_grid_with_pil(grid)
 
 
 if __name__ == "__main__":
