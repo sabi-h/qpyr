@@ -295,20 +295,17 @@ def draw(binary_string: str, version: int, error_correction_level: ECL):
         masked_codewords = apply_mask(mask, codeword_placement)
         masked_grid = override_grid(grid, masked_codewords)
 
-        format_information = get_format_information(error_correction_level, mask_reference=0)
+        format_information = get_format_information(error_correction_level, mask_reference=mask_reference)
         format_information_placement = get_format_placement(grid_size, format_information)
         masked_grid = override_grid(masked_grid, format_information_placement)
 
         draw_grid_with_pil(add_quiet_zone(masked_grid))
-        return
-
-        # grid = override_grid(format_information)
-        format_information = get_format_information(error_correction_level, mask_reference)
+        continue
 
         points = get_mask_penalty_points(masked_grid)
         if points < lowest_penalty_points:
             best_mask_ref, lowest_penalty_points = (mask_reference, points)
-
+    return
     print("best_mask_ref, lowest_penalty_points", best_mask_ref, lowest_penalty_points)
     best_mask = masks[best_mask_ref]
     masked_codewords = apply_mask(best_mask, codeword_placement)
@@ -324,8 +321,9 @@ if __name__ == "__main__":
     format_info = get_format_information(ECL.M, 5)
     print(f"{format_info=}")
 
+    data = "franchie.com"
     ecl = ECL.M
-    binary_str = encode("hello", ecl=ecl)
+    binary_str = encode(data, ecl=ecl)
     draw(binary_str, version=1, error_correction_level=ecl)
 
     # format = 0b000111101011001
