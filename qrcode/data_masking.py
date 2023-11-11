@@ -3,7 +3,7 @@ from numpy.typing import NDArray
 import math
 
 
-class WeightedPenaltyPoints:
+class PenaltyPoint:
     N1 = 3
     N2 = 3
     N3 = 40
@@ -28,7 +28,6 @@ def get_masks() -> List[Callable]:
 
 
 def _calculate_adjacent_penalty_points(array: List[int]) -> int:
-    no_of_consecutive_runs = 0
     consecutive_run = 1
     score = 0
     for i, num in enumerate(array):
@@ -39,18 +38,14 @@ def _calculate_adjacent_penalty_points(array: List[int]) -> int:
 
         if num == previous_number:
             consecutive_run += 1
-            if consecutive_run > 5:
+            if consecutive_run == 5:
+                score += PenaltyPoint.N1
+            elif consecutive_run > 5:
                 score += 1
         else:
-            if consecutive_run >= 5:
-                no_of_consecutive_runs += 1
             consecutive_run = 1
 
-    if consecutive_run >= 5:
-        no_of_consecutive_runs += 1
-
-    total = (no_of_consecutive_runs * WeightedPenaltyPoints.N1) + score
-    return total
+    return score
 
 
 def get_adjacent_modules_points(grid: NDArray) -> int:
