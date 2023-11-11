@@ -5,7 +5,7 @@ import numpy as np
 from numpy.typing import NDArray
 from PIL import Image, ImageDraw
 
-from qrcode.constants import ecl_binary_indicator_map
+from qrcode.static import ecl_binary_indicator_map
 from qrcode.custom_types import ECL, CoordinateValueMap
 from qrcode.data_masking import get_mask_penalty_points, get_masks
 from qrcode.encode import encode
