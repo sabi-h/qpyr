@@ -2,11 +2,9 @@ import itertools
 import re
 from typing import Dict, List, NewType
 
-import qrcode.reedsolomon as rs
-from qrcode.constants import ecl_binary_indicator_map
-from qrcode.custom_types import ECL, ECLNumber
+from qrcode.custom_types import ECL
 from qrcode.reedsolomon import _add_ecc_and_interleave
-from qrcode.utils import bits_to_bytearray, bytearray_to_bits, get_masks
+from qrcode.utils import bits_to_bytearray, bytearray_to_bits
 
 VERSION_CAPACITIES_BY_ECC_MAPPING = {
     ECL.L: {

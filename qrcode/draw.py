@@ -5,11 +5,11 @@ import numpy as np
 from numpy.typing import NDArray
 from PIL import Image, ImageDraw
 
-import qrcode.reedsolomon as rs
-from qrcode.encode import encode
 from qrcode.constants import ecl_binary_indicator_map
-from qrcode.custom_types import CoordinateValueMap, ECL
-from qrcode.utils import convert_to_grid_size, convert_to_version, get_mask_penalty_points, get_masks
+from qrcode.custom_types import ECL, CoordinateValueMap
+from qrcode.data_masking import get_mask_penalty_points, get_masks
+from qrcode.encode import encode
+from qrcode.utils import get_grid_size
 
 """
 TODO:
@@ -17,9 +17,9 @@ TODO:
 next: calculate mask penalty points on the entire grid.
 
 - Get Format information - DONE
-- Draw Format information - NEXT
+- Draw Format information - DONE
 - Mask penalty points - NEXT
-- Use bytearray instead of strings?
+- Use bytearray instead of strings
 """
 
 WHITE = 0
@@ -114,14 +114,14 @@ def add_quiet_zone(grid):
     return grid
 
 
-def override_grid(grid, indexes: Dict[tuple, int]):
+def override_grid(grid: NDArray, indexes: Dict[tuple, int]) -> NDArray:
     for index, value in indexes.items():
         i, j = index
         grid[i][j] = value
     return grid
 
 
-def draw_grid_with_pil(grid: np.ndarray, cell_size: int = 20, outline: Optional[str] = None):
+def draw_grid_with_pil(grid: NDArray, cell_size: int = 20, outline: Optional[str] = None) -> None:
     """
     Draw a grid using PIL based on a 2D numpy array.
 
@@ -130,6 +130,7 @@ def draw_grid_with_pil(grid: np.ndarray, cell_size: int = 20, outline: Optional[
     - cell_size: The size of each cell in the grid in pixels.
     """
 
+    grid = add_quiet_zone(grid)
     # Validate the shape of the grid
     if grid.shape[0] != grid.shape[1]:
         raise ValueError("The input grid must be square (n x n).")
@@ -228,13 +229,11 @@ def get_format_placement(grid_size, format_info: int = DUMMY_VALUE) -> Coordinat
     else:
         format_info_to_draw = [int(x) for x in bin(format_info)[2:]]
 
-    print(format_info_to_draw)
     index = 14
     for row in range(grid_size):
         if (row <= 8) or (row >= grid_size - 8):
             if row in (6, 13):
                 continue
-            print(f"{(row, col := 8)=}")
             result[(row, col := 8)] = format_info_to_draw[index]
             index -= 1
 
@@ -267,7 +266,7 @@ def get_version_information(version: int) -> CoordinateValueMap:
 
 
 def draw(binary_string: str, version: int, error_correction_level: ECL):
-    grid_size = convert_to_grid_size(version)
+    grid_size = get_grid_size(version)
 
     version_information = get_version_information(version)
 
@@ -286,7 +285,6 @@ def draw(binary_string: str, version: int, error_correction_level: ECL):
 
     grid_iterator = iterate_over_grid(grid_size)
     codeword_placement = get_codeword_placement(binary_string, grid, grid_iterator)
-    print(f"{codeword_placement=}")
     grid = override_grid(grid, codeword_placement)
 
     masks = get_masks()
@@ -295,23 +293,25 @@ def draw(binary_string: str, version: int, error_correction_level: ECL):
         masked_codewords = apply_mask(mask, codeword_placement)
         masked_grid = override_grid(grid, masked_codewords)
 
-        format_information = get_format_information(error_correction_level, mask_reference=mask_reference)
+        format_information = get_format_information(error_correction_level, mask_reference)
         format_information_placement = get_format_placement(grid_size, format_information)
         masked_grid = override_grid(masked_grid, format_information_placement)
 
-        draw_grid_with_pil(add_quiet_zone(masked_grid))
-        continue
-
         points = get_mask_penalty_points(masked_grid)
+        print(f"{points=}")
+        print(f"{mask_reference=}, {points=}")
         if points < lowest_penalty_points:
             best_mask_ref, lowest_penalty_points = (mask_reference, points)
-    return
+
     print("best_mask_ref, lowest_penalty_points", best_mask_ref, lowest_penalty_points)
     best_mask = masks[best_mask_ref]
     masked_codewords = apply_mask(best_mask, codeword_placement)
     masked_grid = override_grid(grid, masked_codewords)
 
-    grid = add_quiet_zone(grid)
+    format_information = get_format_information(error_correction_level, best_mask_ref)
+    format_information_placement = get_format_placement(grid_size, format_information)
+    masked_grid = override_grid(masked_grid, format_information_placement)
+
     draw_grid_with_pil(grid)
 
 
@@ -319,7 +319,6 @@ if __name__ == "__main__":
     from pprint import pprint
 
     format_info = get_format_information(ECL.M, 5)
-    print(f"{format_info=}")
 
     data = "franchie.com"
     ecl = ECL.M
