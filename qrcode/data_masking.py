@@ -1,6 +1,8 @@
-from typing import List, Callable
-from numpy.typing import NDArray
 import math
+from typing import Callable, List
+
+import numpy as np
+from numpy.typing import NDArray
 
 
 class PenaltyPoint:
@@ -27,7 +29,7 @@ def get_masks() -> List[Callable]:
     return pattern_reference_map
 
 
-def _calculate_adjacent_penalty_points(array: List[int]) -> int:
+def _calculate_adjacent_penalty_inline(array: List[int]) -> int:
     consecutive_run = 1
     score = 0
     for i, num in enumerate(array):
@@ -48,36 +50,95 @@ def _calculate_adjacent_penalty_points(array: List[int]) -> int:
     return score
 
 
-def get_adjacent_modules_points(grid: NDArray) -> int:
+def get_adjacent_modules_penalty(grid: NDArray) -> int:
     result = 0
     for row in grid.tolist():
-        row_score = _calculate_adjacent_penalty_points(row)
-        result += row_score
+        result += _calculate_adjacent_penalty_inline(row)
 
     for col in grid.T.tolist():
-        col_score = _calculate_adjacent_penalty_points(col)
-        result += col_score
+        result += _calculate_adjacent_penalty_inline(col)
 
     return result
 
 
+def _calculate_finder_penalty(array: NDArray) -> int:
+    pattern = [1, 0, 1, 1, 1, 0, 1]
+    light_area = [0, 0, 0, 0]
+
+    pattern1 = light_area + pattern
+    pattern2 = pattern + light_area
+
+    total_pattern_length = len(pattern1)
+
+    patterns_found = 0
+
+    for i in range(len(array) - total_pattern_length + 1):
+        sub_array = array[i : i + total_pattern_length]
+        if np.array_equal(sub_array, pattern1):
+            patterns_found += 1
+
+        if np.array_equal(sub_array, pattern2):
+            patterns_found += 1
+
+    result = patterns_found * PenaltyPoint.N3
+    return result
+
+
+def get_finder_pattern_penalty(grid):
+    result = 0
+    for row in grid:
+        result += _calculate_finder_penalty(row)
+
+    for col in grid.T:
+        result += _calculate_finder_penalty(col)
+
+    return result
+
+
+def get_same_color_block_penalty(grid: NDArray):
+    blocks_count = 0
+    grid_size = grid.shape[0]
+    for row in range(grid_size - 1):
+        for col in range(grid_size - 1):
+            if grid[row][col] == grid[row][col + 1] == grid[row + 1][col] == grid[row + 1][col + 1]:
+                blocks_count += 1
+    result = blocks_count * PenaltyPoint.N2
+    return result
+
+
+def get_proportion_penalty(grid):
+    black_proportion = (grid == 1).sum() / grid.size
+    deviation = abs((black_proportion * 100) - 50)
+
+    # Every 5% departure from 50%, rating++
+    rating = int(deviation / 5)
+    result = rating * PenaltyPoint.N4
+    return result
+
+
 def get_mask_penalty_points(grid) -> int:
-    adjacent_modules_points = get_adjacent_modules_points(grid)
+    adjacent_modules_points = get_adjacent_modules_penalty(grid)
+    same_color_block_penalty = get_same_color_block_penalty(grid)
+    finder_pattern_penalty = get_finder_pattern_penalty(grid)
 
     total = sum(
         [
             adjacent_modules_points,
+            same_color_block_penalty,
+            finder_pattern_penalty,
         ]
     )
     return total
 
 
 if __name__ == "__main__":
-    import numpy as np
-
-    grid = np.array([[1, 0, 0, 0, 0, 0, 0, 0]])
-
-    points = get_adjacent_modules_points(grid)
-
-    print(f"grid: \n {grid}")
+    grid = np.array(
+        [
+            [0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1],
+        ]
+    )
+    points = get_finder_pattern_penalty(grid)
     print(f"{points=}")
+
+    mask_total_points = get_mask_penalty_points(grid)
+    print(f"{mask_total_points=}")
