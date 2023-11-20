@@ -13,6 +13,7 @@ from qrcode.utils import get_grid_size
 
 """
 TODO:
+- support version > 1
 - Use bytearray instead of strings
 """
 
@@ -20,11 +21,6 @@ WHITE = 0
 BLACK = 1
 DEFAULT_VALUE = -1
 DUMMY_VALUE = -2
-
-
-def get_empty_grid(size: int = 21):
-    grid = np.zeros((size, size))
-    return grid
 
 
 def get_timing_pattern(grid_size: int = 21) -> CoordinateValueMap:
@@ -148,7 +144,8 @@ def draw_grid_with_pil(grid: NDArray, cell_size: int = 20, outline: Optional[str
 
 
 def iterate_over_grid(grid_size) -> List[Tuple[int, int]]:
-    """Iterates over all grid cells in zig-zag pattern and returns an iterator of tuples (row, col)."""
+    """Iterates over all grid cells in zig-zag pattern and returns an iterator of tuples (row, col)
+    in order, starting from bottom right."""
     result = []
     up = True
     for column in range(grid_size - 1, 0, -2):
@@ -156,7 +153,7 @@ def iterate_over_grid(grid_size) -> List[Tuple[int, int]]:
             column -= 1
 
         if up:
-            row = 20
+            row = grid_size - 1
         else:
             row = 0
 
@@ -260,6 +257,9 @@ def get_version_information(version: int) -> CoordinateValueMap:
 
 
 def draw(binary_string: str, version: int, error_correction_level: ECL):
+    if version > 1:
+        raise NotImplementedError("Only version 1 is supported atm.")
+
     grid_size = get_grid_size(version)
 
     version_information = get_version_information(version)
@@ -309,15 +309,7 @@ def draw(binary_string: str, version: int, error_correction_level: ECL):
 
 
 if __name__ == "__main__":
-    from pprint import pprint
-
-    format_info = get_format_information(ECL.M, 5)
-
-    data = "wei_paul.com"
+    data = "omegaseed.com"
     ecl = ECL.L
     binary_str = encode(data, ecl=ecl)
     draw(binary_str, version=1, error_correction_level=ecl)
-
-    # format = 0b000111101011001
-    # fmt = (format << 10) + qr_check_format(format << 10)
-    # print(bin(fmt))

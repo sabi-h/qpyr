@@ -50,24 +50,19 @@ def get_segment(segments: list[str]):
     return "".join(segments)
 
 
-def get_best_version(data_segment: str, ecl: ECL) -> str:
+def get_best_version(data_segment: str, ecl: ECL) -> int:
     data_codewords = len(data_segment) // 8
     for version, capacities in VERSION_CAPACITIES_BY_ECC_MAPPING[ecl.value].items():
         data_capacity = capacities[1]
         if data_codewords <= data_capacity:
+            if version > 1:
+                raise NotImplementedError("Only version 1 is supported rn.")
             return version
     raise ValueError("Data too long")
 
 
-def get_number_of_ecc_codewords(version: str, ecl: ECL) -> int:
+def get_number_of_ecc_codewords(version: int, ecl: ECL) -> int:
     return VERSION_CAPACITIES_BY_ECC_MAPPING[ecl.value][version][2]
-
-
-def _binary_str_to_hex(binary_str: str) -> str:
-    """Splits binary string into 8-bit chunks and converts each chunk to hex."""
-    binary_str_split: List[str] = [binary_str[i : i + 8] for i in range(0, len(binary_str), 8)]
-    hex_str = [hex(int(s, 2))[2:] for s in binary_str_split]
-    return " ".join(hex_str)
 
 
 def bytearray_to_binary(value: bytearray) -> str:
@@ -95,7 +90,7 @@ def str_to_hex(data: str) -> str:
     return " ".join(map(lambda x: hex(ord(x))[2:], data))
 
 
-def add_padding(data: str, version: str, ecl: ECL) -> str:
+def add_padding(data: str, version: int, ecl: ECL) -> str:
     """Add padding to data segment.
 
     Args:
@@ -123,24 +118,8 @@ def str_to_decimals(data: str) -> str:
     return " ".join(map(lambda x: str(ord(x)), data))
 
 
-def dec_to_binary(dec_value: int) -> str:
-    return bin(dec_value)[2:].zfill(8)
-
-
-def hex_to_binary(hex_value: str) -> str:
-    return bin(int(hex_value, 16))[2:].zfill(8)
-
-
-def binary_to_dec(binary_value: str) -> int:
-    return int(binary_value, 2)
-
-
 def binary_to_hex(binary_value: str) -> str:
     return hex(int(binary_value, 2))[2:]
-
-
-def dec_to_hex(dec_value: int) -> str:
-    return hex(dec_value)[2:]
 
 
 def split_str_for_display(value: str, split_value: int) -> str:
@@ -161,7 +140,6 @@ def encode(data: str, ecl: ECL):
     Args:
         data (str): data to encode
     """
-    data = str(data)
     print(f"data: {data}", f"decimal: {str_to_decimals(data)}", f"hex: {str_to_hex(data)}", sep="\n")
 
     mode = get_best_mode(data)
@@ -187,7 +165,7 @@ def encode(data: str, ecl: ECL):
     data_to_encode = bits_to_bytearray(segment)
     print(f"{data_to_encode=}")
 
-    encoded_data = _add_ecc_and_interleave(version=int(version), ecl=ecl.name, data=data_to_encode)
+    encoded_data = _add_ecc_and_interleave(version=version, ecl=ecl.name, data=data_to_encode)
     print(f"{bytearray_to_binary(encoded_data)=}")
 
     all_bits = bytearray_to_bits(encoded_data)
@@ -196,9 +174,4 @@ def encode(data: str, ecl: ECL):
 
 if __name__ == "__main__":
     data = "omegaseed.co.uk"
-
-    # tests
-    assert get_best_mode("Hello, world! 123") == "byte"
-    assert get_best_version("10101010" * 43, ECL.L) == "3"
-
-    encode(data, ecl=ECL.M)
+    encode(data, ecl=ECL.L)
