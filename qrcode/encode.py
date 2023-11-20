@@ -5,26 +5,7 @@ from typing import Dict, List, NewType
 from qrcode.custom_types import ECL
 from qrcode.reedsolomon import _add_ecc_and_interleave
 from qrcode.utils import bits_to_bytearray, bytearray_to_bits
-
-VERSION_CAPACITIES_BY_ECC_MAPPING = {
-    ECL.L: {
-        # verion: (total capacity, data capacity, error correction capacity)
-        "1": (26, 19, 7),
-        "2": (44, 34, 10),
-        "3": (70, 55, 15),
-        "4": (100, 80, 20),
-        "5": (134, 108, 26),
-    },
-    ECL.M: {
-        "1": (26, 16, 10),
-    },
-    ECL.Q: {
-        "1": (26, 13, 13),
-    },
-    ECL.H: {
-        "1": (26, 9, 17),
-    },
-}
+from qrcode.static import VERSION_CAPACITIES_BY_ECC_MAPPING
 
 
 BinaryString = NewType("BinaryString", str)
@@ -71,7 +52,7 @@ def get_segment(segments: list[str]):
 
 def get_best_version(data_segment: str, ecl: ECL) -> str:
     data_codewords = len(data_segment) // 8
-    for version, capacities in VERSION_CAPACITIES_BY_ECC_MAPPING[ecl].items():
+    for version, capacities in VERSION_CAPACITIES_BY_ECC_MAPPING[ecl.value].items():
         data_capacity = capacities[1]
         if data_codewords <= data_capacity:
             return version
@@ -79,7 +60,7 @@ def get_best_version(data_segment: str, ecl: ECL) -> str:
 
 
 def get_number_of_ecc_codewords(version: str, ecl: ECL) -> int:
-    return VERSION_CAPACITIES_BY_ECC_MAPPING[ecl][version][2]
+    return VERSION_CAPACITIES_BY_ECC_MAPPING[ecl.value][version][2]
 
 
 def _binary_str_to_hex(binary_str: str) -> str:
@@ -129,7 +110,7 @@ def add_padding(data: str, version: str, ecl: ECL) -> str:
     bit_padding_required = (lambda x: (8 - (x % 8)) % 8)(data_length)
     data = data + "0" * bit_padding_required
 
-    data_capacity = VERSION_CAPACITIES_BY_ECC_MAPPING[ecl][version][1]
+    data_capacity = VERSION_CAPACITIES_BY_ECC_MAPPING[ecl.value][version][1]
 
     redundant_bytes_required = ((data_capacity * 8) - len(data)) // 8
     padding_bytes = itertools.cycle(["11101100", "00010001"])
@@ -214,7 +195,7 @@ def encode(data: str, ecl: ECL):
 
 
 if __name__ == "__main__":
-    data = "hello"
+    data = "omegaseed.co.uk"
 
     # tests
     assert get_best_mode("Hello, world! 123") == "byte"

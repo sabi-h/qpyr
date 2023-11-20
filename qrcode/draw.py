@@ -13,12 +13,6 @@ from qrcode.utils import get_grid_size
 
 """
 TODO:
-
-next: calculate mask penalty points on the entire grid.
-
-- Get Format information - DONE
-- Draw Format information - DONE
-- Mask penalty points - NEXT
 - Use bytearray instead of strings
 """
 
@@ -298,8 +292,7 @@ def draw(binary_string: str, version: int, error_correction_level: ECL):
         masked_grid = override_grid(masked_grid, format_information_placement)
 
         points = get_mask_penalty_points(masked_grid)
-        print(f"{points=}")
-        print(f"{mask_reference=}, {points=}")
+
         if points < lowest_penalty_points:
             best_mask_ref, lowest_penalty_points = (mask_reference, points)
 
@@ -320,8 +313,8 @@ if __name__ == "__main__":
 
     format_info = get_format_information(ECL.M, 5)
 
-    data = "franchie.com"
-    ecl = ECL.M
+    data = "wei_paul.com"
+    ecl = ECL.L
     binary_str = encode(data, ecl=ecl)
     draw(binary_str, version=1, error_correction_level=ecl)
 

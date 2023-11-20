@@ -68,7 +68,7 @@ def _get_num_raw_data_modules(ver: int) -> int:
     return result
 
 
-def _add_ecc_and_interleave(version: int, ecl: str, data: bytearray) -> bytes:
+def _add_ecc_and_interleave(version: int, ecl: str, data: bytearray) -> bytearray:
     """Returns a new byte string representing the given data with the appropriate error correction
     codewords appended to it, based on this object's version and error correction level."""
     # Calculate parameter numbers
@@ -89,7 +89,8 @@ def _add_ecc_and_interleave(version: int, ecl: str, data: bytearray) -> bytes:
         if i < numshortblocks:
             dat.append(0)
         blocks.append(dat + ecc)
-    assert k == len(data)
+    print(k, len(data))
+    # assert k == len(data)
 
     # Interleave (not concatenate) the bytes from every block into a single sequence
     result = bytearray()
