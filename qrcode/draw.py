@@ -5,7 +5,7 @@ import numpy as np
 from numpy.typing import NDArray
 from PIL import Image, ImageDraw
 
-from qrcode.static import ecl_binary_indicator_map
+from qrcode.static import ALIGNMENT_PATTERNS_COORDS, ecl_binary_indicator_map
 from qrcode.custom_types import ECL, CoordinateValueMap
 from qrcode.data_masking import get_mask_penalty_points, get_masks
 from qrcode.encode import encode
@@ -248,18 +248,42 @@ def apply_mask(mask: Callable, data: CoordinateValueMap) -> CoordinateValueMap:
     return result
 
 
+def _get_alignment_pattern_coords(version, grid_size) -> List[int]:
+    """Returns a list of row/col coordinates of center modules for alignment patterns."""
+    if version == 1:
+        return []
+    else:
+        numalign: int = version // 7 + 2
+        step: int = 26 if (version == 32) else (version * 4 + numalign * 2 + 1) // (numalign * 2 - 2) * 2
+        result: List[int] = [(grid_size - 7 - i * step) for i in range(numalign - 1)] + [6]
+        return list(reversed(result))
+
+
+def get_alignment_patterns(alignment_pattern_coords: List):
+    num_coords = len(alignment_pattern_coords)
+    skip = [(0, 0), (0, num_coords - 1), (num_coords - 1, 0)]
+
+    positions = []
+    for i in range(num_coords):
+        for j in range(num_coords):
+            if (i, j) not in skip:
+                position = (alignment_pattern_coords[i], alignment_pattern_coords[j])
+                positions.append(position)
+
+    return positions
+
+
 def get_version_information(version: int) -> CoordinateValueMap:
     if version <= 6:
         return {}
     else:
         # TODO: TO BE IMPLEMENTED - it should return non-empty dict.
-        raise NotImplementedError("Currently only versions below 7 are supported.")
+        # raise NotImplementedError("Currently only versions below 7 are supported.")
+        print("\n \t\t *** WARNING!! *** \n get_version_information() function not yet implemented correctly.\n\n")
+        return {}
 
 
 def draw(binary_string: str, version: int, error_correction_level: ECL):
-    if version > 1:
-        raise NotImplementedError("Only version 1 is supported atm.")
-
     grid_size = get_grid_size(version)
 
     version_information = get_version_information(version)
@@ -269,6 +293,11 @@ def draw(binary_string: str, version: int, error_correction_level: ECL):
     seperator_pattern = get_seperator_pattern(grid_size)
     timing_pattern = get_timing_pattern(grid_size)
 
+    alignment_pattern_coords = _get_alignment_pattern_coords(version, grid_size)
+    positions = get_alignment_patterns(alignment_pattern_coords)
+
+    print(positions)
+    return
     grid = np.full((grid_size, grid_size), -1, dtype=int)
 
     grid = override_grid(grid, dummy_format_information)
@@ -312,4 +341,4 @@ if __name__ == "__main__":
     data = "omegaseed.com"
     ecl = ECL.L
     binary_str = encode(data, ecl=ecl)
-    draw(binary_str, version=1, error_correction_level=ecl)
+    draw(binary_str, version=7, error_correction_level=ecl)

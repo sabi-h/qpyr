@@ -55,8 +55,6 @@ def get_best_version(data_segment: str, ecl: ECL) -> int:
     for version, capacities in VERSION_CAPACITIES_BY_ECC_MAPPING[ecl.value].items():
         data_capacity = capacities[1]
         if data_codewords <= data_capacity:
-            if version > 1:
-                raise NotImplementedError("Only version 1 is supported rn.")
             return version
     raise ValueError("Data too long")
 
@@ -173,5 +171,5 @@ def encode(data: str, ecl: ECL):
 
 
 if __name__ == "__main__":
-    data = "omegaseed.co.uk"
+    data = "omegaseed.com"
     encode(data, ecl=ECL.L)
