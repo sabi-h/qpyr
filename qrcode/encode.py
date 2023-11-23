@@ -100,7 +100,7 @@ def add_padding(data: str, version: int, ecl: ECL) -> str:
         str: padded data segment
     """
     data_length = len(data)
-    bit_padding_required = (lambda x: (8 - (x % 8)) % 8)(data_length)
+    bit_padding_required = (8 - (data_length % 8)) % 8
     data = data + "0" * bit_padding_required
 
     data_capacity = VERSION_CAPACITIES_BY_ECC_MAPPING[ecl.value][version][1]
@@ -157,9 +157,6 @@ def encode(data: str, ecl: ECL):
     print(f"segment pretty: {split_str_for_display(segment, 8)}")
     print(f"segment in hex: {split_str_for_display(binary_to_hex(segment), 2)}")
 
-    number_of_ecc_codewords = get_number_of_ecc_codewords(version, ecl)
-    print(f"Number of ECC codewords: {number_of_ecc_codewords}")
-
     data_to_encode = bits_to_bytearray(segment)
     print(f"{data_to_encode=}")
 
@@ -167,7 +164,7 @@ def encode(data: str, ecl: ECL):
     print(f"{bytearray_to_binary(encoded_data)=}")
 
     all_bits = bytearray_to_bits(encoded_data)
-    return all_bits
+    return version, all_bits
 
 
 if __name__ == "__main__":

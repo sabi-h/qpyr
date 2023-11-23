@@ -5,7 +5,6 @@ import numpy as np
 from numpy.typing import NDArray
 from PIL import Image, ImageDraw
 
-from qrcode.static import ALIGNMENT_PATTERNS_COORDS, ecl_binary_indicator_map
 from qrcode.custom_types import ECL, CoordinateValueMap
 from qrcode.data_masking import get_mask_penalty_points, get_masks
 from qrcode.encode import encode
@@ -173,21 +172,25 @@ def iterate_over_grid(grid_size) -> List[Tuple[int, int]]:
 
 def get_codeword_placement(binary_str, grid, grid_iterator) -> CoordinateValueMap:
     result = {}
+
     for row, col in grid_iterator:
         if not binary_str:
-            break
-        if grid[row][col] == -1:
+            # Pad with white blocks.
+            if grid[row][col] == -1:
+                result[(row, col)] = WHITE
+        elif grid[row][col] == -1:
             result[(row, col)] = binary_str[0]
             binary_str = binary_str[1:]
         else:
             continue
+
     return result
 
 
 def get_format_information(ecl: ECL, mask_reference: int) -> int:
     generator_polynomial = 1335
     mask = 21522
-
+    ecl_binary_indicator_map = {"L": 1, "M": 0, "Q": 3, "H": 2}
     ecl_binary_indicator = ecl_binary_indicator_map[ecl.value]
 
     data: int = ecl_binary_indicator << 3 | mask_reference  # errCorrLvl is uint2, mask is uint3
@@ -218,7 +221,8 @@ def get_format_placement(grid_size, format_info: int = DUMMY_VALUE) -> Coordinat
     if format_info == DUMMY_VALUE:
         format_info_to_draw = [DUMMY_VALUE] * 15
     else:
-        format_info_to_draw = [int(x) for x in bin(format_info)[2:]]
+        format_info_to_draw = [int(x) for x in bin(format_info)[2:].zfill(15)]
+        assert len(format_info_to_draw) == 15
 
     index = 14
     for row in range(grid_size):
@@ -259,7 +263,7 @@ def _get_alignment_pattern_coords(version, grid_size) -> List[int]:
         return list(reversed(result))
 
 
-def get_alignment_patterns(alignment_pattern_coords: List):
+def get_alignment_pattern_positions(alignment_pattern_coords: List):
     num_coords = len(alignment_pattern_coords)
     skip = [(0, 0), (0, num_coords - 1), (num_coords - 1, 0)]
 
@@ -273,6 +277,25 @@ def get_alignment_patterns(alignment_pattern_coords: List):
     return positions
 
 
+def get_alignment_patterns(positions) -> CoordinateValueMap:
+    result = {}
+    for position in positions:
+        x, y = position
+        xstart, xend = x - 2, x + 2
+        ystart, yend = y - 2, y + 2
+        for i in range(xstart, xend + 1):
+            for j in range(ystart, yend + 1):
+                if (i == xstart) or (i == xend):
+                    result[i, j] = BLACK
+                elif (j == ystart) or (j == yend):
+                    result[i, j] = BLACK
+                elif (i == x) and (j == y):
+                    result[i, j] = BLACK
+                else:
+                    result[i, j] = WHITE
+    return result
+
+
 def get_version_information(version: int) -> CoordinateValueMap:
     if version <= 6:
         return {}
@@ -283,7 +306,7 @@ def get_version_information(version: int) -> CoordinateValueMap:
         return {}
 
 
-def draw(binary_string: str, version: int, error_correction_level: ECL):
+def draw(binary_string: str, version: int, ecl: ECL):
     grid_size = get_grid_size(version)
 
     version_information = get_version_information(version)
@@ -294,20 +317,21 @@ def draw(binary_string: str, version: int, error_correction_level: ECL):
     timing_pattern = get_timing_pattern(grid_size)
 
     alignment_pattern_coords = _get_alignment_pattern_coords(version, grid_size)
-    positions = get_alignment_patterns(alignment_pattern_coords)
+    alignment_pattern_positions = get_alignment_pattern_positions(alignment_pattern_coords)
+    alignment_pattern = get_alignment_patterns(alignment_pattern_positions)
 
-    print(positions)
-    return
     grid = np.full((grid_size, grid_size), -1, dtype=int)
 
     grid = override_grid(grid, dummy_format_information)
     grid = override_grid(grid, timing_pattern)
     grid = override_grid(grid, finder_patterns)
     grid = override_grid(grid, seperator_pattern)
+    grid = override_grid(grid, alignment_pattern)
     grid = override_grid(grid, version_information)
 
     grid_iterator = iterate_over_grid(grid_size)
     codeword_placement = get_codeword_placement(binary_string, grid, grid_iterator)
+
     grid = override_grid(grid, codeword_placement)
 
     masks = get_masks()
@@ -316,7 +340,7 @@ def draw(binary_string: str, version: int, error_correction_level: ECL):
         masked_codewords = apply_mask(mask, codeword_placement)
         masked_grid = override_grid(grid, masked_codewords)
 
-        format_information = get_format_information(error_correction_level, mask_reference)
+        format_information = get_format_information(ecl, mask_reference)
         format_information_placement = get_format_placement(grid_size, format_information)
         masked_grid = override_grid(masked_grid, format_information_placement)
 
@@ -330,7 +354,7 @@ def draw(binary_string: str, version: int, error_correction_level: ECL):
     masked_codewords = apply_mask(best_mask, codeword_placement)
     masked_grid = override_grid(grid, masked_codewords)
 
-    format_information = get_format_information(error_correction_level, best_mask_ref)
+    format_information = get_format_information(ecl, best_mask_ref)
     format_information_placement = get_format_placement(grid_size, format_information)
     masked_grid = override_grid(masked_grid, format_information_placement)
 
@@ -339,6 +363,6 @@ def draw(binary_string: str, version: int, error_correction_level: ECL):
 
 if __name__ == "__main__":
     data = "omegaseed.com"
-    ecl = ECL.L
-    binary_str = encode(data, ecl=ecl)
-    draw(binary_str, version=7, error_correction_level=ecl)
+    ecl = ECL.H
+    version, binary_str = encode(data, ecl=ecl)
+    draw(binary_str, version, ecl=ecl)
