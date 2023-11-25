@@ -89,8 +89,7 @@ def _add_ecc_and_interleave(version: int, ecl: str, data: bytearray) -> bytearra
         if i < numshortblocks:
             dat.append(0)
         blocks.append(dat + ecc)
-    print(k, len(data))
-    # assert k == len(data)
+    assert k == len(data)
 
     # Interleave (not concatenate) the bytes from every block into a single sequence
     result = bytearray()
