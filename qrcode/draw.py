@@ -12,7 +12,6 @@ from qrcode.utils import get_grid_size
 
 """
 TODO:
-- support version > 1
 - Use bytearray instead of strings
 """
 
@@ -362,7 +361,7 @@ def draw(binary_string: str, version: int, ecl: ECL):
 
 
 if __name__ == "__main__":
-    data = "omegaseed.com"
-    ecl = ECL.H
+    data = "omegaseed.co.uk/myawesomefoodideas"
+    ecl = ECL.L
     version, binary_str = encode(data, ecl=ecl)
     draw(binary_str, version, ecl=ecl)

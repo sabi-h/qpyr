@@ -50,17 +50,12 @@ def get_segment(segments: list[str]):
     return "".join(segments)
 
 
-def get_best_version(data_segment: str, ecl: ECL) -> int:
-    data_codewords = len(data_segment) // 8
-    for version, capacities in VERSION_CAPACITIES_BY_ECC_MAPPING[ecl.value].items():
-        data_capacity = capacities[1]
-        if data_codewords <= data_capacity:
+def get_best_version(data_segment: str, ecl: str) -> int:
+    bytes_required = len(data_segment) // 8
+    for version, max_capacity in enumerate(VERSION_CAPACITIES_BY_ECC_MAPPING[ecl]):
+        if bytes_required <= max_capacity:
             return version
     raise ValueError("Data too long")
-
-
-def get_number_of_ecc_codewords(version: int, ecl: ECL) -> int:
-    return VERSION_CAPACITIES_BY_ECC_MAPPING[ecl.value][version][2]
 
 
 def bytearray_to_binary(value: bytearray) -> str:
@@ -88,13 +83,11 @@ def str_to_hex(data: str) -> str:
     return " ".join(map(lambda x: hex(ord(x))[2:], data))
 
 
-def add_padding(data: str, version: int, ecl: ECL) -> str:
+def add_padding(data: str, version: int, ecl: str) -> str:
     """Add padding to data segment.
 
     Args:
         data (str): data segment
-        version (str): QR code version
-        ecl (str): error correction level
 
     Returns:
         str: padded data segment
@@ -103,8 +96,7 @@ def add_padding(data: str, version: int, ecl: ECL) -> str:
     bit_padding_required = (8 - (data_length % 8)) % 8
     data = data + "0" * bit_padding_required
 
-    data_capacity = VERSION_CAPACITIES_BY_ECC_MAPPING[ecl.value][version][1]
-
+    data_capacity = VERSION_CAPACITIES_BY_ECC_MAPPING[ecl][version]
     redundant_bytes_required = ((data_capacity * 8) - len(data)) // 8
     padding_bytes = itertools.cycle(["11101100", "00010001"])
     for _ in range(redundant_bytes_required):
@@ -146,18 +138,20 @@ def encode(data: str, ecl: ECL):
     mode_segment = get_segment_mode(mode)
     chr_count_segment = get_segment_character_count(data)
     data_segment = get_segment_data(data)
-    version = get_best_version(data_segment, ecl)
-    print(f"Best version:", version)
 
     terminator_segment = get_segment_terminator()
     segment = get_segment([mode_segment, chr_count_segment, data_segment, terminator_segment])
-    segment = add_padding(segment, version, ecl)
 
-    print(f"segment: {segment}")
-    print(f"segment pretty: {split_str_for_display(segment, 8)}")
-    print(f"segment in hex: {split_str_for_display(binary_to_hex(segment), 2)}")
+    version = get_best_version(segment, ecl.value)
+    print(f"Best version:", version)
 
-    data_to_encode = bits_to_bytearray(segment)
+    segment_with_padding = add_padding(segment, version, ecl.value)
+
+    print(f"segment: {segment_with_padding}")
+    print(f"segment pretty: {split_str_for_display(segment_with_padding, 8)}")
+    print(f"segment in hex: {split_str_for_display(binary_to_hex(segment_with_padding), 2)}")
+
+    data_to_encode = bits_to_bytearray(segment_with_padding)
     print(f"{data_to_encode=}")
 
     encoded_data = _add_ecc_and_interleave(version=version, ecl=ecl.name, data=data_to_encode)
@@ -169,4 +163,4 @@ def encode(data: str, ecl: ECL):
 
 if __name__ == "__main__":
     data = "omegaseed.com"
-    encode(data, ecl=ECL.L)
+    encode(data=data, ecl=ECL.L)
