@@ -132,6 +132,7 @@ def encode(data: str, ecl: ECL):
     Args:
         data (str): data to encode
     """
+    print(f"ECL: {ecl.value}")
     print(f"data: {data}", f"decimal: {str_to_decimals(data)}", f"hex: {str_to_hex(data)}", sep="\n")
 
     mode = get_best_mode(data)
@@ -150,14 +151,14 @@ def encode(data: str, ecl: ECL):
     segment_with_padding = add_padding(segment, version, ecl.value)
 
     print(f"segment: {segment_with_padding}")
-    print(f"segment pretty: {split_str_for_display(segment_with_padding, 8)}")
-    print(f"segment in hex: {split_str_for_display(binary_to_hex(segment_with_padding), 2)}")
+    print(f"\nsegment pretty: {split_str_for_display(segment_with_padding, 8)}")
+    print(f"\nsegment in hex: {split_str_for_display(binary_to_hex(segment_with_padding), 2)}")
 
     data_to_encode = bits_to_bytearray(segment_with_padding)
-    print(f"{data_to_encode=}")
+    print(f"\n{data_to_encode=}")
 
     encoded_data = _add_ecc_and_interleave(version=version, ecl=ecl.name, data=data_to_encode)
-    print(f"{bytearray_to_binary(encoded_data)=}")
+    print(f"\nDATA+ECC: {bytearray_to_binary(encoded_data)}")
 
     all_bits = bytearray_to_bits(encoded_data)
     return version, all_bits
