@@ -5,7 +5,7 @@ from typing import Dict, List, NewType
 from qrcode.custom_types import ECL
 from qrcode.reedsolomon import _add_ecc_and_interleave
 from qrcode.utils import bits_to_bytearray, bytearray_to_bits
-from qrcode.static import VERSION_CAPACITIES_BY_ECC_MAPPING
+from qrcode.static import _NUM_ERROR_CORRECTION_BLOCKS, VERSION_CAPACITIES_BY_ECC_MAPPING
 
 
 BinaryString = NewType("BinaryString", str)
@@ -52,7 +52,9 @@ def get_segment(segments: list[str]):
 
 def get_best_version(data_segment: str, ecl: str) -> int:
     bytes_required = len(data_segment) // 8
-    for version, max_capacity in enumerate(VERSION_CAPACITIES_BY_ECC_MAPPING[ecl]):
+    for version, capacity_per_block in enumerate(VERSION_CAPACITIES_BY_ECC_MAPPING[ecl]):
+        num_blocks = _NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
+        max_capacity = capacity_per_block * num_blocks
         if bytes_required <= max_capacity:
             return version
     raise ValueError("Data too long")
