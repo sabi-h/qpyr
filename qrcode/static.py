@@ -1,27 +1,12 @@
-from typing import Sequence, Dict
+from typing import List, Literal, Sequence, Dict, Tuple
 
 
 # fmt: off
-ecl_binary_indicator_map = {"L": 1, "M": 0, "Q": 3, "H": 2}
-
-VERSION_CAPACITIES_BY_ECC_MAPPING = {
-    "L": {
-        # verion: (total capacity, data capacity, error correction capacity)
-        "1": (26, 19, 7),
-        "2": (44, 34, 10),
-        "3": (70, 55, 15),
-        "4": (100, 80, 20),
-        "5": (134, 108, 26),
-    },
-    "M": {
-        "1": (26, 16, 10),
-    },
-    "Q": {
-        "1": (26, 13, 13),
-    },
-    "H": {
-        "1": (26, 9, 17),
-    },
+VERSION_CAPACITIES_BY_ECC_MAPPING: Dict[str, Tuple] = {
+    "L": (-1, 19, 34, 55, 80, 108, ),
+    "M": (-1, 16,),
+    "Q": (-1, 13,),
+    "H": (-1, 9, 16, 13, 9),
 }
 
 _ECC_CODEWORDS_PER_BLOCK: Dict[str, Sequence[int]] = {
