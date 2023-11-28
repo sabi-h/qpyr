@@ -99,7 +99,9 @@ def add_padding(data: str, version: int, ecl: str) -> str:
     data = data + "0" * bit_padding_required
 
     data_capacity = VERSION_CAPACITIES_BY_ECC_MAPPING[ecl][version]
-    redundant_bytes_required = ((data_capacity * 8) - len(data)) // 8
+    num_of_blocks = _NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
+
+    redundant_bytes_required = ((num_of_blocks * data_capacity * 8) - len(data)) // 8
     padding_bytes = itertools.cycle(["11101100", "00010001"])
     for _ in range(redundant_bytes_required):
         data += next(padding_bytes)

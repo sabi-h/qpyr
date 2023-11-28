@@ -361,7 +361,7 @@ def draw(binary_string: str, version: int, ecl: ECL):
 
 
 if __name__ == "__main__":
-    data = "omegaseed.co.uk/myawesomefoodideas"
+    data = "omegaseed-myawesomefoodideas-weee"
     ecl = ECL.H
     version, binary_str = encode(data, ecl=ecl)
     draw(binary_str, version, ecl=ecl)
