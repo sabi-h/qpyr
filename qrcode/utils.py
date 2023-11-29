@@ -1,3 +1,6 @@
+from qrcode.static import ECC_CODEWORDS_PER_BLOCK, NUM_ERROR_CORRECTION_BLOCKS, TOTAL_NUMBER_OF_CODEWORDS
+
+
 def bits_to_bytearray(bit_string):
     byte_array = bytearray()
 
@@ -25,3 +28,12 @@ def get_version(grid_size: int):
 
 def get_grid_size(version: int):
     return int(version * 4 + 17)
+
+
+def get_data_codewords_per_block(ecl: str, version: int) -> int:
+    total_codewords = TOTAL_NUMBER_OF_CODEWORDS[version]
+    ecc_codewords_per_block = ECC_CODEWORDS_PER_BLOCK[ecl][version]
+    num_of_blocks = NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
+
+    data_codewords_per_block = int((total_codewords - (ecc_codewords_per_block * num_of_blocks)) / num_of_blocks)
+    return data_codewords_per_block

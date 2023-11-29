@@ -1,6 +1,6 @@
 from typing import List, Sequence
 
-from qrcode.static import _ECC_CODEWORDS_PER_BLOCK, _NUM_ERROR_CORRECTION_BLOCKS
+from qrcode.static import ECC_CODEWORDS_PER_BLOCK, NUM_ERROR_CORRECTION_BLOCKS
 from qrcode.utils import bits_to_bytearray, bytearray_to_bits
 
 
@@ -72,8 +72,8 @@ def _add_ecc_and_interleave(version: int, ecl: str, data: bytearray) -> bytearra
     """Returns a new byte string representing the given data with the appropriate error correction
     codewords appended to it, based on this object's version and error correction level."""
     # Calculate parameter numbers
-    numblocks: int = _NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
-    blockecclen: int = _ECC_CODEWORDS_PER_BLOCK[ecl][version]
+    numblocks: int = NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
+    blockecclen: int = ECC_CODEWORDS_PER_BLOCK[ecl][version]
     rawcodewords: int = _get_num_raw_data_modules(version) // 8
     numshortblocks: int = numblocks - rawcodewords % numblocks
     shortblocklen: int = rawcodewords // numblocks

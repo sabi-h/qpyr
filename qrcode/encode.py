@@ -4,8 +4,8 @@ from typing import Dict, List, NewType
 
 from qrcode.custom_types import ECL
 from qrcode.reedsolomon import _add_ecc_and_interleave
-from qrcode.utils import bits_to_bytearray, bytearray_to_bits
-from qrcode.static import _NUM_ERROR_CORRECTION_BLOCKS, VERSION_CAPACITIES_BY_ECC_MAPPING
+from qrcode.utils import bits_to_bytearray, bytearray_to_bits, get_data_codewords_per_block
+from qrcode.static import NUM_ERROR_CORRECTION_BLOCKS
 
 
 BinaryString = NewType("BinaryString", str)
@@ -52,8 +52,9 @@ def get_segment(segments: list[str]):
 
 def get_best_version(data_segment: str, ecl: str) -> int:
     bytes_required = len(data_segment) // 8
-    for version, capacity_per_block in enumerate(VERSION_CAPACITIES_BY_ECC_MAPPING[ecl]):
-        num_blocks = _NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
+    for version in range(1, 41):
+        capacity_per_block = get_data_codewords_per_block(ecl, version)
+        num_blocks = NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
         max_capacity = capacity_per_block * num_blocks
         if bytes_required <= max_capacity:
             return version
@@ -98,8 +99,8 @@ def add_padding(data: str, version: int, ecl: str) -> str:
     bit_padding_required = (8 - (data_length % 8)) % 8
     data = data + "0" * bit_padding_required
 
-    data_capacity = VERSION_CAPACITIES_BY_ECC_MAPPING[ecl][version]
-    num_of_blocks = _NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
+    data_capacity = get_data_codewords_per_block(ecl, version)
+    num_of_blocks = NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
 
     redundant_bytes_required = ((num_of_blocks * data_capacity * 8) - len(data)) // 8
     padding_bytes = itertools.cycle(["11101100", "00010001"])

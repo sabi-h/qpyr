@@ -361,7 +361,12 @@ def draw(binary_string: str, version: int, ecl: ECL):
 
 
 if __name__ == "__main__":
-    data = "omegaseed-myawesomefoodideas-weee"
+    data = (
+        "The sort of things make"
+        + "up the world are the"
+        # + "sort of things that matter,"
+        # + "but only to a small fraction of humans."
+    )
     ecl = ECL.H
     version, binary_str = encode(data, ecl=ecl)
     draw(binary_str, version, ecl=ecl)
