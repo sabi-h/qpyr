@@ -295,20 +295,34 @@ def get_alignment_patterns(positions) -> CoordinateValueMap:
     return result
 
 
-def get_version_information(version: int) -> CoordinateValueMap:
+def get_version_information(version: int) -> Optional[int]:
     if version <= 6:
+        return None
+
+    generator_polynomial = 7973
+
+    data: int = version
+    rem: int = data
+    for _ in range(12):
+        rem = (rem << 1) ^ ((rem >> 11) * generator_polynomial)
+    bits: int = data << 12 | rem
+    assert bits >> 18 == 0
+    return bits
+
+
+def get_version_placement(version_information: Optional[int]) -> CoordinateValueMap:
+    if not version_information:
         return {}
-    else:
-        # TODO: TO BE IMPLEMENTED - it should return non-empty dict.
-        # raise NotImplementedError("Currently only versions below 7 are supported.")
-        print("\n \t\t *** WARNING!! *** \n get_version_information() function not yet implemented correctly.\n\n")
-        return {}
+
+    print(bin(version_information)[2:].zfill(18))
+    return {}
 
 
 def draw(binary_string: str, version: int, ecl: ECL):
     grid_size = get_grid_size(version)
 
     version_information = get_version_information(version)
+    version_information_placement = get_version_placement(version_information)
 
     dummy_format_information = get_dummy_format_information(grid_size)
     finder_patterns = get_finder_patterns(finder_pattern_generator, grid_size)
@@ -326,7 +340,7 @@ def draw(binary_string: str, version: int, ecl: ECL):
     grid = override_grid(grid, finder_patterns)
     grid = override_grid(grid, seperator_pattern)
     grid = override_grid(grid, alignment_pattern)
-    grid = override_grid(grid, version_information)
+    grid = override_grid(grid, version_information_placement)
 
     grid_iterator = iterate_over_grid(grid_size)
     codeword_placement = get_codeword_placement(binary_string, grid, grid_iterator)
@@ -361,12 +375,15 @@ def draw(binary_string: str, version: int, ecl: ECL):
 
 
 if __name__ == "__main__":
-    data = (
-        "The sort of things make"
-        + "up the world are the"
-        # + "sort of things that matter,"
-        # + "but only to a small fraction of humans."
-    )
-    ecl = ECL.H
-    version, binary_str = encode(data, ecl=ecl)
-    draw(binary_str, version, ecl=ecl)
+    # data = (
+    #     "The sort of things make"
+    #     + "up the world are the"
+    #     # + "sort of things that matter,"
+    #     # + "but only to a small fraction of humans."
+    # )
+    # ecl = ECL.H
+    # version, binary_str = encode(data, ecl=ecl)
+    # draw(binary_str, version, ecl=ecl)
+
+    vi = get_version_information(version=8)
+    print(vi, bin(vi)[2:].zfill(18))
