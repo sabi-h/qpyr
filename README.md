@@ -1,4 +1,4 @@
-# QRCode Library
+# QR Code Encoder
 
 ![Status](https://img.shields.io/badge/status-under%20development-orange)
 
