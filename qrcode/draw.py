@@ -310,19 +310,40 @@ def get_version_information(version: int) -> Optional[int]:
     return bits
 
 
-def get_version_placement(version_information: Optional[int]) -> CoordinateValueMap:
+def get_version_placement(version_information: Optional[int], grid_size: int) -> CoordinateValueMap:
     if not version_information:
         return {}
 
-    print(bin(version_information)[2:].zfill(18))
-    return {}
+    result = {}
+    value = [int(x) for x in bin(version_information)[2:].zfill(18)]
+    value = value[::-1]  # reversed
+
+    value_index = 0
+    top_right_start_index = (0, grid_size - 11)
+    bottom_left_start_index = (grid_size - 11, 0)
+    for row in range(6):
+        for col in range(3):
+            row_index = row
+            col_index = top_right_start_index[1] + col
+            result[(row_index, col_index)] = value[value_index]
+            value_index += 1
+
+    value_index = 0
+    for col in range(6):
+        for row in range(3):
+            col_index = col
+            row_index = bottom_left_start_index[0] + row
+            result[(row_index, col_index)] = value[value_index]
+            value_index += 1
+
+    return result
 
 
 def draw(binary_string: str, version: int, ecl: ECL):
     grid_size = get_grid_size(version)
 
     version_information = get_version_information(version)
-    version_information_placement = get_version_placement(version_information)
+    version_information_placement = get_version_placement(version_information, grid_size)
 
     dummy_format_information = get_dummy_format_information(grid_size)
     finder_patterns = get_finder_patterns(finder_pattern_generator, grid_size)
@@ -339,6 +360,7 @@ def draw(binary_string: str, version: int, ecl: ECL):
     grid = override_grid(grid, timing_pattern)
     grid = override_grid(grid, finder_patterns)
     grid = override_grid(grid, seperator_pattern)
+    grid = override_grid(grid, version_information_placement)
     grid = override_grid(grid, alignment_pattern)
     grid = override_grid(grid, version_information_placement)
 
@@ -375,15 +397,13 @@ def draw(binary_string: str, version: int, ecl: ECL):
 
 
 if __name__ == "__main__":
-    # data = (
-    #     "The sort of things make"
-    #     + "up the world are the"
-    #     # + "sort of things that matter,"
-    #     # + "but only to a small fraction of humans."
-    # )
-    # ecl = ECL.H
-    # version, binary_str = encode(data, ecl=ecl)
-    # draw(binary_str, version, ecl=ecl)
-
-    vi = get_version_information(version=8)
-    print(vi, bin(vi)[2:].zfill(18))
+    data = (
+        "The sort of things make"
+        + "up the world are the"
+        # + "sort of things that matter,"
+        # + "but only to a small fraction of humans."
+    )
+    data = "Hello, world! 123Hello, world! 123Hello, world! 123Hello83ndeHello, world!"
+    ecl = ECL.H
+    version, binary_str = encode(data, ecl=ecl)
+    draw(binary_str, version, ecl=ecl)

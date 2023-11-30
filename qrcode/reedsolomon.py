@@ -1,7 +1,7 @@
 from typing import List, Sequence
 
 from qrcode.static import ECC_CODEWORDS_PER_BLOCK, NUM_ERROR_CORRECTION_BLOCKS
-from qrcode.utils import bits_to_bytearray, bytearray_to_bits
+from qrcode.utils import get_num_raw_data_modules, bits_to_bytearray, bytearray_to_bits
 
 
 def _reed_solomon_compute_divisor(degree: int) -> bytes:
@@ -52,29 +52,13 @@ def _reed_solomon_multiply(x: int, y: int) -> int:
     return z
 
 
-def _get_num_raw_data_modules(ver: int) -> int:
-    """Returns the number of data bits that can be stored in a QR Code of the given version number, after
-    all function modules are excluded. This includes remainder bits, so it might not be a multiple of 8.
-    The result is in the range [208, 29648]. This could be implemented as a 40-entry lookup table."""
-    if not (1 <= ver <= 40):
-        raise ValueError("Version number out of range")
-    result: int = (16 * ver + 128) * ver + 64
-    if ver >= 2:
-        numalign: int = ver // 7 + 2
-        result -= (25 * numalign - 10) * numalign - 55
-        if ver >= 7:
-            result -= 36
-    assert 208 <= result <= 29648
-    return result
-
-
 def _add_ecc_and_interleave(version: int, ecl: str, data: bytearray) -> bytearray:
     """Returns a new byte string representing the given data with the appropriate error correction
     codewords appended to it, based on this object's version and error correction level."""
     # Calculate parameter numbers
     numblocks: int = NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
     blockecclen: int = ECC_CODEWORDS_PER_BLOCK[ecl][version]
-    rawcodewords: int = _get_num_raw_data_modules(version) // 8
+    rawcodewords: int = get_num_raw_data_modules(version) // 8
     numshortblocks: int = numblocks - rawcodewords % numblocks
     shortblocklen: int = rawcodewords // numblocks
 
