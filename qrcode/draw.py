@@ -295,20 +295,55 @@ def get_alignment_patterns(positions) -> CoordinateValueMap:
     return result
 
 
-def get_version_information(version: int) -> CoordinateValueMap:
+def get_version_information(version: int) -> Optional[int]:
     if version <= 6:
+        return None
+
+    generator_polynomial = 7973
+
+    data: int = version
+    rem: int = data
+    for _ in range(12):
+        rem = (rem << 1) ^ ((rem >> 11) * generator_polynomial)
+    bits: int = data << 12 | rem
+    assert bits >> 18 == 0
+    return bits
+
+
+def get_version_placement(version_information: Optional[int], grid_size: int) -> CoordinateValueMap:
+    if not version_information:
         return {}
-    else:
-        # TODO: TO BE IMPLEMENTED - it should return non-empty dict.
-        # raise NotImplementedError("Currently only versions below 7 are supported.")
-        print("\n \t\t *** WARNING!! *** \n get_version_information() function not yet implemented correctly.\n\n")
-        return {}
+
+    result = {}
+    value = [int(x) for x in bin(version_information)[2:].zfill(18)]
+    value = value[::-1]  # reversed
+
+    value_index = 0
+    top_right_start_index = (0, grid_size - 11)
+    bottom_left_start_index = (grid_size - 11, 0)
+    for row in range(6):
+        for col in range(3):
+            row_index = row
+            col_index = top_right_start_index[1] + col
+            result[(row_index, col_index)] = value[value_index]
+            value_index += 1
+
+    value_index = 0
+    for col in range(6):
+        for row in range(3):
+            col_index = col
+            row_index = bottom_left_start_index[0] + row
+            result[(row_index, col_index)] = value[value_index]
+            value_index += 1
+
+    return result
 
 
 def draw(binary_string: str, version: int, ecl: ECL):
     grid_size = get_grid_size(version)
 
     version_information = get_version_information(version)
+    version_information_placement = get_version_placement(version_information, grid_size)
 
     dummy_format_information = get_dummy_format_information(grid_size)
     finder_patterns = get_finder_patterns(finder_pattern_generator, grid_size)
@@ -325,8 +360,9 @@ def draw(binary_string: str, version: int, ecl: ECL):
     grid = override_grid(grid, timing_pattern)
     grid = override_grid(grid, finder_patterns)
     grid = override_grid(grid, seperator_pattern)
+    grid = override_grid(grid, version_information_placement)
     grid = override_grid(grid, alignment_pattern)
-    grid = override_grid(grid, version_information)
+    grid = override_grid(grid, version_information_placement)
 
     grid_iterator = iterate_over_grid(grid_size)
     codeword_placement = get_codeword_placement(binary_string, grid, grid_iterator)
@@ -367,6 +403,7 @@ if __name__ == "__main__":
         # + "sort of things that matter,"
         # + "but only to a small fraction of humans."
     )
+    data = "Hello, world! 123Hello, world! 123Hello, world! 123Hello83ndeHello, world!"
     ecl = ECL.H
     version, binary_str = encode(data, ecl=ecl)
     draw(binary_str, version, ecl=ecl)

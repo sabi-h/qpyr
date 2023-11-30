@@ -3,9 +3,9 @@ import re
 from typing import Dict, List, NewType
 
 from qrcode.custom_types import ECL
-from qrcode.reedsolomon import _add_ecc_and_interleave
-from qrcode.utils import bits_to_bytearray, bytearray_to_bits, get_data_codewords_per_block
-from qrcode.static import NUM_ERROR_CORRECTION_BLOCKS
+from qrcode.reedsolomon import _add_ecc_and_interleave, get_num_raw_data_modules
+from qrcode.utils import bits_to_bytearray, bytearray_to_bits, get_data_codewords_per_short_block
+from qrcode.static import ECC_CODEWORDS_PER_BLOCK, NUM_ERROR_CORRECTION_BLOCKS
 
 
 BinaryString = NewType("BinaryString", str)
@@ -53,7 +53,7 @@ def get_segment(segments: list[str]):
 def get_best_version(data_segment: str, ecl: str) -> int:
     bytes_required = len(data_segment) // 8
     for version in range(1, 41):
-        capacity_per_block = get_data_codewords_per_block(ecl, version)
+        capacity_per_block = get_data_codewords_per_short_block(ecl, version)
         num_blocks = NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
         max_capacity = capacity_per_block * num_blocks
         if bytes_required <= max_capacity:
@@ -99,10 +99,13 @@ def add_padding(data: str, version: int, ecl: str) -> str:
     bit_padding_required = (8 - (data_length % 8)) % 8
     data = data + "0" * bit_padding_required
 
-    data_capacity = get_data_codewords_per_block(ecl, version)
+    total_num_of_codewords: int = get_num_raw_data_modules(version) // 8
     num_of_blocks = NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
+    blockecclen: int = ECC_CODEWORDS_PER_BLOCK[ecl][version]
 
-    redundant_bytes_required = ((num_of_blocks * data_capacity * 8) - len(data)) // 8
+    total_data_capacity = total_num_of_codewords - (blockecclen * num_of_blocks)
+    redundant_bytes_required = ((total_data_capacity * 8) - len(data)) // 8
+
     padding_bytes = itertools.cycle(["11101100", "00010001"])
     for _ in range(redundant_bytes_required):
         data += next(padding_bytes)
@@ -144,16 +147,16 @@ def encode(data: str, ecl: ECL):
     mode_segment = get_segment_mode(mode)
     chr_count_segment = get_segment_character_count(data)
     data_segment = get_segment_data(data)
-
     terminator_segment = get_segment_terminator()
     segment = get_segment([mode_segment, chr_count_segment, data_segment, terminator_segment])
+    print(f"{segment=}")
 
     version = get_best_version(segment, ecl.value)
     print(f"Best version:", version)
 
     segment_with_padding = add_padding(segment, version, ecl.value)
 
-    print(f"segment: {segment_with_padding}")
+    print(f"segment with padding: {segment_with_padding}")
     print(f"\nsegment pretty: {split_str_for_display(segment_with_padding, 8)}")
     print(f"\nsegment in hex: {split_str_for_display(binary_to_hex(segment_with_padding), 2)}")
 
@@ -168,5 +171,5 @@ def encode(data: str, ecl: ECL):
 
 
 if __name__ == "__main__":
-    data = "omegaseed.com"
-    encode(data=data, ecl=ECL.L)
+    data = "Hello, world! 123Hello, world! 123Hello, world! 123Hello83nde"
+    encode(data=data, ecl=ECL.H)
