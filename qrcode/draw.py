@@ -12,7 +12,7 @@ from qrcode.utils import get_grid_size
 
 """
 TODO:
-- Use bytearray instead of strings
+- Use bytearray everywhere instead of strings
 """
 
 WHITE = 0
@@ -186,11 +186,11 @@ def get_codeword_placement(binary_str, grid, grid_iterator) -> CoordinateValueMa
     return result
 
 
-def get_format_information(ecl: ECL, mask_reference: int) -> int:
+def get_format_information(ecl: str, mask_reference: int) -> int:
     generator_polynomial = 1335
     mask = 21522
     ecl_binary_indicator_map = {"L": 1, "M": 0, "Q": 3, "H": 2}
-    ecl_binary_indicator = ecl_binary_indicator_map[ecl.value]
+    ecl_binary_indicator = ecl_binary_indicator_map[ecl]
 
     data: int = ecl_binary_indicator << 3 | mask_reference  # errCorrLvl is uint2, mask is uint3
     rem: int = data
@@ -339,7 +339,7 @@ def get_version_placement(version_information: Optional[int], grid_size: int) ->
     return result
 
 
-def draw(binary_string: str, version: int, ecl: ECL):
+def draw(binary_string: str, version: int, ecl: str):
     grid_size = get_grid_size(version)
 
     version_information = get_version_information(version)
@@ -403,7 +403,7 @@ if __name__ == "__main__":
         # + "sort of things that matter,"
         # + "but only to a small fraction of humans."
     )
-    data = "Hello, world! 123Hello, world! 123Hello, world! 123Hello83ndeHello, world!"
-    ecl = ECL.H
+    data = "Hello, world! 123Hello, world! 123Hello, world! 123Hello83ndeHello, world!123Hello83ndeHello, world!123Hello83ndeHello, world!123Hello83ndeHello, world!123Hello83ndeHello, world!123Hello83ndeHello, world!123Hello83ndeHello, world!"
+    ecl = ECL.H.value
     version, binary_str = encode(data, ecl=ecl)
     draw(binary_str, version, ecl=ecl)

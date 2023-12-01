@@ -1,5 +1,5 @@
-from qrcode.utils import get_data_codewords_per_short_block
+from qrcode.utils import get_total_data_capacity_bytes
 
 
 def test_get_data_codewords_per_block():
-    assert get_data_codewords_per_short_block(ecl="H", version=4) == 9
+    assert get_total_data_capacity_bytes(ecl="H", version=11) == 140

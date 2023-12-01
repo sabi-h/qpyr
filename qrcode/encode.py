@@ -4,7 +4,12 @@ from typing import Dict, List, NewType
 
 from qrcode.custom_types import ECL
 from qrcode.reedsolomon import _add_ecc_and_interleave, get_num_raw_data_modules
-from qrcode.utils import bits_to_bytearray, bytearray_to_bits, get_data_codewords_per_short_block
+from qrcode.utils import (
+    bits_to_bytearray,
+    bytearray_to_bits,
+    get_segment_character_bits_length,
+    get_total_data_capacity_bytes,
+)
 from qrcode.static import ECC_CODEWORDS_PER_BLOCK, NUM_ERROR_CORRECTION_BLOCKS
 
 
@@ -38,25 +43,37 @@ def get_segment_mode(mode):
     return {"numeric": "0001", "alphanumeric": "0010", "byte": "0100"}[mode]
 
 
-def get_segment_character_count(data):
-    return bin(len(data))[2:].zfill(8)
+def get_segment_character_count(data, mode: str, version: int):
+    result = ""
+    if mode == "byte":
+        if version <= 9:
+            result = bin(len(data))[2:].zfill(8)
+        else:
+            result = bin(len(data))[2:].zfill(16)
+    return result
 
 
-def get_segment_terminator() -> str:
-    return "0000"
+def get_segment_terminator(data_segment: str, mode_segment: str, chr_count_segment: str) -> str:
+    total_bits = len(data_segment) + len(mode_segment) + len(chr_count_segment)
+    if total_bits % 8 == 4:
+        return "0000"
+    return ""
 
 
 def get_segment(segments: list[str]):
     return "".join(segments)
 
 
-def get_best_version(data_segment: str, ecl: str) -> int:
-    bytes_required = len(data_segment) // 8
+def get_best_version(data_segment: str, mode: str, ecl: str) -> int:
+    total_mode_bits = 4
+    bits_required = len(data_segment) + total_mode_bits
+
     for version in range(1, 41):
-        capacity_per_block = get_data_codewords_per_short_block(ecl, version)
-        num_blocks = NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
-        max_capacity = capacity_per_block * num_blocks
-        if bytes_required <= max_capacity:
+        total_capacity_bits = get_total_data_capacity_bytes(ecl, version) * 8
+        segment_character_bits_length = get_segment_character_bits_length(mode, version)
+        bits_required_total = bits_required + segment_character_bits_length
+
+        if bits_required_total <= total_capacity_bits:
             return version
     raise ValueError("Data too long")
 
@@ -132,44 +149,37 @@ def split_binary_str(value: str, split_value: int = 8) -> list:
     return parts
 
 
-def encode(data: str, ecl: ECL):
+def encode(data: str, ecl: str):
     """Create a QR code from data.
 
     Args:
         data (str): data to encode
     """
-    print(f"ECL: {ecl.value}")
-    print(f"data: {data}", f"decimal: {str_to_decimals(data)}", f"hex: {str_to_hex(data)}", sep="\n")
+    version = 11  # TODO: REMOVE THIS AFTER TESTING - FOR TEST ONLY
 
     mode = get_best_mode(data)
-    print(f"Best mode: {mode}")
+    if mode != "byte":
+        raise NotImplementedError("Only byte mode supported.")
 
-    mode_segment = get_segment_mode(mode)
-    chr_count_segment = get_segment_character_count(data)
     data_segment = get_segment_data(data)
-    terminator_segment = get_segment_terminator()
+    version = get_best_version(data_segment, mode, ecl)
+    mode_segment = get_segment_mode(mode)
+    chr_count_segment = get_segment_character_count(data, mode, version)
+    terminator_segment = get_segment_terminator(data_segment, mode_segment, chr_count_segment)
     segment = get_segment([mode_segment, chr_count_segment, data_segment, terminator_segment])
-    print(f"{segment=}")
 
-    version = get_best_version(segment, ecl.value)
-    print(f"Best version:", version)
-
-    segment_with_padding = add_padding(segment, version, ecl.value)
-
-    print(f"segment with padding: {segment_with_padding}")
-    print(f"\nsegment pretty: {split_str_for_display(segment_with_padding, 8)}")
-    print(f"\nsegment in hex: {split_str_for_display(binary_to_hex(segment_with_padding), 2)}")
+    segment_with_padding = add_padding(segment, version, ecl)
 
     data_to_encode = bits_to_bytearray(segment_with_padding)
-    print(f"\n{data_to_encode=}")
 
-    encoded_data = _add_ecc_and_interleave(version=version, ecl=ecl.name, data=data_to_encode)
-    print(f"\nDATA+ECC: {bytearray_to_binary(encoded_data)}")
+    encoded_data = _add_ecc_and_interleave(version=version, ecl=ecl, data=data_to_encode)
 
     all_bits = bytearray_to_bits(encoded_data)
+
+    print(f"ECL: {ecl}")
+    print(f"data: {data}", f"decimal: {str_to_decimals(data)}", f"hex: {str_to_hex(data)}", sep="\n")
+    print(f"Best mode: {mode}")
+    print(f"{data_segment=}")
+    print(f"Best version:", version)
+
     return version, all_bits
-
-
-if __name__ == "__main__":
-    data = "Hello, world! 123Hello, world! 123Hello, world! 123Hello83nde"
-    encode(data=data, ecl=ECL.H)

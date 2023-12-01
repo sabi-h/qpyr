@@ -1,8 +1,7 @@
-from typing import List, Literal, Sequence, Dict, Tuple
+from typing import Sequence, Dict
 
 
 # fmt: off
-
 
 TOTAL_NUMBER_OF_CODEWORDS: Sequence[int] = (
     -1, 26, 44, 70, 100, 134, 172, 196, 242, 292, 346, 404, 466, 532, 581, 655, 733, 815, 901, 991, 1085, 
