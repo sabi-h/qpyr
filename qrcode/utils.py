@@ -30,13 +30,21 @@ def get_grid_size(version: int):
     return int(version * 4 + 17)
 
 
-def get_data_codewords_per_short_block(ecl: str, version: int) -> int:
-    total_codewords = TOTAL_NUMBER_OF_CODEWORDS[version]
-    ecc_codewords_per_block = ECC_CODEWORDS_PER_BLOCK[ecl][version]
-    num_of_blocks = NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
+def get_segment_character_bits_length(mode: str, version: int):
+    result = 0
+    if mode == "byte":
+        if version <= 9:
+            result = 8
+        else:
+            result = 16
+    return result
 
-    data_codewords_per_block = int((total_codewords - (ecc_codewords_per_block * num_of_blocks)) / num_of_blocks)
-    return data_codewords_per_block
+
+def get_total_data_capacity_bytes(ecl: str, version: int) -> int:
+    total_codewords = TOTAL_NUMBER_OF_CODEWORDS[version]
+    total_ecc_codewords = ECC_CODEWORDS_PER_BLOCK[ecl][version] * NUM_ERROR_CORRECTION_BLOCKS[ecl][version]
+    total_data_codewords = total_codewords - total_ecc_codewords
+    return total_data_codewords
 
 
 def get_num_raw_data_modules(version: int) -> int:

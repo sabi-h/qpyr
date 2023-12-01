@@ -6,13 +6,19 @@ from numpy.typing import NDArray
 from PIL import Image, ImageDraw
 
 from qrcode.custom_types import ECL, CoordinateValueMap
-from qrcode.data_masking import get_mask_penalty_points, get_masks
+from qrcode.data_masking import (
+    get_adjacent_modules_penalty,
+    get_finder_pattern_penalty,
+    get_masks,
+    get_proportion_penalty,
+    get_same_color_block_penalty,
+)
 from qrcode.encode import encode
 from qrcode.utils import get_grid_size
 
 """
 TODO:
-- Use bytearray instead of strings
+- Use bytearray everywhere instead of strings
 """
 
 WHITE = 0
@@ -90,12 +96,12 @@ def get_seperator_pattern(grid_size) -> CoordinateValueMap:
     return result
 
 
-def add_quiet_zone(grid):
-    horizontal_zone = np.zeros((grid.shape[0], 1))
+def add_quiet_zone(grid, border: int = 4):
+    horizontal_zone = np.zeros((grid.shape[0], border))
     grid = np.hstack((grid, horizontal_zone))
     grid = np.hstack((horizontal_zone, grid))
 
-    vertical_zone = np.zeros((1, grid.shape[1]))
+    vertical_zone = np.zeros((border, grid.shape[1]))
     grid = np.vstack((grid, vertical_zone))
     grid = np.vstack((vertical_zone, grid))
 
@@ -117,8 +123,6 @@ def draw_grid_with_pil(grid: NDArray, cell_size: int = 20, outline: Optional[str
     - grid: A 2D numpy array of shape (n, n) containing 0, 1, -1, -2.
     - cell_size: The size of each cell in the grid in pixels.
     """
-
-    grid = add_quiet_zone(grid)
     # Validate the shape of the grid
     if grid.shape[0] != grid.shape[1]:
         raise ValueError("The input grid must be square (n x n).")
@@ -186,11 +190,11 @@ def get_codeword_placement(binary_str, grid, grid_iterator) -> CoordinateValueMa
     return result
 
 
-def get_format_information(ecl: ECL, mask_reference: int) -> int:
+def get_format_information(ecl: str, mask_reference: int) -> int:
     generator_polynomial = 1335
     mask = 21522
     ecl_binary_indicator_map = {"L": 1, "M": 0, "Q": 3, "H": 2}
-    ecl_binary_indicator = ecl_binary_indicator_map[ecl.value]
+    ecl_binary_indicator = ecl_binary_indicator_map[ecl]
 
     data: int = ecl_binary_indicator << 3 | mask_reference  # errCorrLvl is uint2, mask is uint3
     rem: int = data
@@ -339,7 +343,7 @@ def get_version_placement(version_information: Optional[int], grid_size: int) ->
     return result
 
 
-def draw(binary_string: str, version: int, ecl: ECL):
+def draw(binary_string: str, version: int, ecl: str, quiet_zone_border: int = 4):
     grid_size = get_grid_size(version)
 
     version_information = get_version_information(version)
@@ -379,12 +383,21 @@ def draw(binary_string: str, version: int, ecl: ECL):
         format_information_placement = get_format_placement(grid_size, format_information)
         masked_grid = override_grid(masked_grid, format_information_placement)
 
-        points = get_mask_penalty_points(masked_grid)
+        adjacent_modules_points = get_adjacent_modules_penalty(masked_grid)
+        same_color_block_penalty = get_same_color_block_penalty(masked_grid)
 
-        if points < lowest_penalty_points:
-            best_mask_ref, lowest_penalty_points = (mask_reference, points)
+        masked_grid_with_quiet_zone = add_quiet_zone(masked_grid, quiet_zone_border)
+        finder_pattern_penalty = get_finder_pattern_penalty(masked_grid_with_quiet_zone)
 
-    print("best_mask_ref, lowest_penalty_points", best_mask_ref, lowest_penalty_points)
+        proportion_penalty = get_proportion_penalty(masked_grid)
+
+        total_penalty_points = (
+            adjacent_modules_points + same_color_block_penalty + finder_pattern_penalty + proportion_penalty
+        )
+
+        if total_penalty_points < lowest_penalty_points:
+            best_mask_ref, lowest_penalty_points = (mask_reference, total_penalty_points)
+
     best_mask = masks[best_mask_ref]
     masked_codewords = apply_mask(best_mask, codeword_placement)
     masked_grid = override_grid(grid, masked_codewords)
@@ -393,7 +406,10 @@ def draw(binary_string: str, version: int, ecl: ECL):
     format_information_placement = get_format_placement(grid_size, format_information)
     masked_grid = override_grid(masked_grid, format_information_placement)
 
+    grid = add_quiet_zone(grid, quiet_zone_border)
     draw_grid_with_pil(grid)
+
+    print(f"{best_mask_ref=}, {lowest_penalty_points=}")
 
 
 if __name__ == "__main__":
@@ -403,7 +419,7 @@ if __name__ == "__main__":
         # + "sort of things that matter,"
         # + "but only to a small fraction of humans."
     )
-    data = "Hello, world! 123Hello, world! 123Hello, world! 123Hello83ndeHello, world!"
-    ecl = ECL.H
+    data = "Hello, world! 123Hello, world! 123Hello, world! 123Hello83ndeHello, world!123Hello83ndeHello, world!123Hello83ndeHello, world!123Hello83ndeHello, world!123Hello83ndeHello, world!123Hello83ndeHello, world!123Hello83ndeHello, world!"
+    ecl = ECL.H.value
     version, binary_str = encode(data, ecl=ecl)
     draw(binary_str, version, ecl=ecl)

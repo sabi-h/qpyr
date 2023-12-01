@@ -4,6 +4,11 @@ from typing import Callable, List
 import numpy as np
 from numpy.typing import NDArray
 
+"""
+TODO:
+- Penalty points function is incorrect.
+"""
+
 
 class PenaltyPoint:
     N1 = 3
@@ -84,13 +89,36 @@ def _calculate_finder_penalty(array: NDArray) -> int:
     return result
 
 
+def _calculate_finder_penalty_2(array: NDArray) -> int:
+    pattern = [1, 0, 1, 1, 1, 0, 1]
+    light_area = [0, 0, 0, 0]
+
+    pattern1 = light_area + pattern
+    pattern2 = pattern + light_area
+
+    total_pattern_length = len(pattern1)
+
+    patterns_found = 0
+
+    for i in range(len(array) - total_pattern_length + 1):
+        sub_array = array[i : i + total_pattern_length]
+        if np.array_equal(sub_array, pattern1):
+            patterns_found += 1
+
+        if np.array_equal(sub_array, pattern2):
+            patterns_found += 1
+
+    result = patterns_found * PenaltyPoint.N3
+    return result
+
+
 def get_finder_pattern_penalty(grid):
     result = 0
     for row in grid:
-        result += _calculate_finder_penalty(row)
+        result += _calculate_finder_penalty_2(row)
 
     for col in grid.T:
-        result += _calculate_finder_penalty(col)
+        result += _calculate_finder_penalty_2(col)
 
     return result
 
@@ -116,21 +144,6 @@ def get_proportion_penalty(grid):
     return result
 
 
-def get_mask_penalty_points(grid) -> int:
-    adjacent_modules_points = get_adjacent_modules_penalty(grid)
-    same_color_block_penalty = get_same_color_block_penalty(grid)
-    finder_pattern_penalty = get_finder_pattern_penalty(grid)
-
-    total = sum(
-        [
-            adjacent_modules_points,
-            same_color_block_penalty,
-            finder_pattern_penalty,
-        ]
-    )
-    return total
-
-
 if __name__ == "__main__":
     grid = np.array(
         [
@@ -139,6 +152,3 @@ if __name__ == "__main__":
     )
     points = get_finder_pattern_penalty(grid)
     print(f"{points=}")
-
-    mask_total_points = get_mask_penalty_points(grid)
-    print(f"{mask_total_points=}")
