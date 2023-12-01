@@ -155,8 +155,6 @@ def encode(data: str, ecl: str):
     Args:
         data (str): data to encode
     """
-    version = 11  # TODO: REMOVE THIS AFTER TESTING - FOR TEST ONLY
-
     mode = get_best_mode(data)
     if mode != "byte":
         raise NotImplementedError("Only byte mode supported.")
@@ -177,9 +175,8 @@ def encode(data: str, ecl: str):
     all_bits = bytearray_to_bits(encoded_data)
 
     print(f"ECL: {ecl}")
-    print(f"data: {data}", f"decimal: {str_to_decimals(data)}", f"hex: {str_to_hex(data)}", sep="\n")
+    print(f"data: {data}")
     print(f"Best mode: {mode}")
-    print(f"{data_segment=}")
     print(f"Best version:", version)
 
     return version, all_bits
