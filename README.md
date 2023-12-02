@@ -1,8 +1,9 @@
+![Status](https://img.shields.io/badge/status-under%20development-orange)
+![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)
+
 # QR Code Encoder
 Python library for generating QR Codes written with emphasis on readability. Ideal for learning.
 
-![Status](https://img.shields.io/badge/status-under%20development-orange)
-![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)
 
 
 ## Basic usage
