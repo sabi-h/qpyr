@@ -1,13 +1,12 @@
+"""
+TODO:
+- Penalty points function has a bug.
+"""
 import math
 from typing import Callable, List
 
 import numpy as np
 from numpy.typing import NDArray
-
-"""
-TODO:
-- Penalty points function is incorrect.
-"""
 
 
 class PenaltyPoint:

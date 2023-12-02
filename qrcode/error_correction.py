@@ -52,7 +52,7 @@ def _reed_solomon_multiply(x: int, y: int) -> int:
     return z
 
 
-def _add_ecc_and_interleave(version: int, ecl: str, data: bytearray) -> bytearray:
+def add_ecc_and_interleave(version: int, ecl: str, data: bytearray) -> bytearray:
     """Returns a new byte string representing the given data with the appropriate error correction
     codewords appended to it, based on this object's version and error correction level."""
     # Calculate parameter numbers
@@ -89,7 +89,7 @@ def _add_ecc_and_interleave(version: int, ecl: str, data: bytearray) -> bytearra
 if __name__ == "__main__":
     data = "01000000010101101000011001010110110001101100011011110000111011000001000111101100000100011110110000010001111011000001000111101100"
     data = bits_to_bytearray(data)
-    data_and_ecc = _add_ecc_and_interleave(version=1, ecl="M", data=data)
+    data_and_ecc = add_ecc_and_interleave(version=1, ecl="M", data=data)
     data_and_ecc = bytearray_to_bits(data_and_ecc)
     assert (
         data_and_ecc

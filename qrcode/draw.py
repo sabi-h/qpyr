@@ -1,11 +1,15 @@
+"""
+TODO:
+- Use bytearray instead of strings
+"""
+
 from functools import partial
-from typing import Callable, Dict, List, Literal, Optional, Tuple, TypeAlias
+from typing import Callable, Dict, List, Optional, Tuple, TypeAlias
 
 import numpy as np
 from numpy.typing import NDArray
 from PIL import Image, ImageDraw
 
-from qrcode.custom_types import ECL, CoordinateValueMap
 from qrcode.data_masking import (
     get_adjacent_modules_penalty,
     get_finder_pattern_penalty,
@@ -16,10 +20,8 @@ from qrcode.data_masking import (
 from qrcode.encode import encode
 from qrcode.utils import get_grid_size
 
-"""
-TODO:
-- Use bytearray everywhere instead of strings
-"""
+
+CoordinateValueMap: TypeAlias = Dict[Tuple[int, int], int]
 
 WHITE = 0
 BLACK = 1
@@ -409,17 +411,9 @@ def draw(binary_string: str, version: int, ecl: str, quiet_zone_border: int = 4)
     grid = add_quiet_zone(grid, quiet_zone_border)
     draw_grid_with_pil(grid)
 
-    print(f"{best_mask_ref=}, {lowest_penalty_points=}")
-
 
 if __name__ == "__main__":
-    data = (
-        "The sort of things make"
-        + "up the world are the"
-        # + "sort of things that matter,"
-        # + "but only to a small fraction of humans."
-    )
-    data = "Hello, world! 123Hello, world! 123Hello, world! 123Hello83ndeHello, world!123Hello83ndeHello, world!123Hello83ndeHello, world!123Hello83ndeHello, world!123Hello83ndeHello, world!123Hello83ndeHello, world!123Hello83ndeHello, world!"
-    ecl = ECL.H.value
+    data = "google.com"
+    ecl = "H"
     version, binary_str = encode(data, ecl=ecl)
     draw(binary_str, version, ecl=ecl)

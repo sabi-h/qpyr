@@ -2,11 +2,11 @@ from qrcode.encode import encode
 from qrcode.draw import draw
 
 
-def main(data, ecc_level="LOW"):
-    # encode
-    # draw
-    pass
+def main(data, ecl="M"):
+    version, binary_str = encode(data, ecl=ecl)
+    draw(binary_str, version, ecl=ecl)
 
 
 if __name__ == "__main__":
-    main("hello")
+    url = "google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/"
+    main(url, ecl="H")

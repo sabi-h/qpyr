@@ -1,9 +1,7 @@
 import itertools
 import re
-from typing import Dict, List, NewType
 
-from qrcode.custom_types import ECL
-from qrcode.reedsolomon import _add_ecc_and_interleave, get_num_raw_data_modules
+from qrcode.error_correction import add_ecc_and_interleave, get_num_raw_data_modules
 from qrcode.utils import (
     bits_to_bytearray,
     bytearray_to_bits,
@@ -11,9 +9,6 @@ from qrcode.utils import (
     get_total_data_capacity_bytes,
 )
 from qrcode.static import ECC_CODEWORDS_PER_BLOCK, NUM_ERROR_CORRECTION_BLOCKS
-
-
-BinaryString = NewType("BinaryString", str)
 
 
 def get_best_mode(data: str) -> str:
@@ -60,7 +55,7 @@ def get_segment_terminator(data_segment: str, mode_segment: str, chr_count_segme
     return ""
 
 
-def get_segment(segments: list[str]):
+def combine_segments(segments: list[str]):
     return "".join(segments)
 
 
@@ -76,31 +71,6 @@ def get_best_version(data_segment: str, mode: str, ecl: str) -> int:
         if bits_required_total <= total_capacity_bits:
             return version
     raise ValueError("Data too long")
-
-
-def bytearray_to_binary(value: bytearray) -> str:
-    return "".join(format(x, "08b") for x in value)
-
-
-def message_to_decimals(msg: str) -> List[int]:
-    data = []
-    if all(map(lambda x: isinstance(x, str), msg)):
-        function = ord
-    elif all(map(lambda x: isinstance(x, int), msg)):
-        function = int
-    else:
-        raise ValueError("Message must be an integer or strings, not mixed.")
-
-    data = list(map(function, str(msg)))
-    return data
-
-
-def numbers_to_hex(data: List[int]) -> str:
-    return " ".join(map(lambda x: hex(x)[2:], data))
-
-
-def str_to_hex(data: str) -> str:
-    return " ".join(map(lambda x: hex(ord(x))[2:], data))
 
 
 def add_padding(data: str, version: int, ecl: str) -> str:
@@ -129,26 +99,6 @@ def add_padding(data: str, version: int, ecl: str) -> str:
     return data
 
 
-def str_to_decimals(data: str) -> str:
-    return " ".join(map(lambda x: str(ord(x)), data))
-
-
-def binary_to_hex(binary_value: str) -> str:
-    return hex(int(binary_value, 2))[2:]
-
-
-def split_str_for_display(value: str, split_value: int) -> str:
-    indices = [i * split_value for i in range(len(value) // split_value)]
-    parts = [value[i:j] for i, j in zip(indices, indices[1:] + [None])]
-    return " ".join(parts)
-
-
-def split_binary_str(value: str, split_value: int = 8) -> list:
-    indices = [i * split_value for i in range(len(value) // split_value)]
-    parts = [value[i:j] for i, j in zip(indices, indices[1:] + [None])]
-    return parts
-
-
 def encode(data: str, ecl: str):
     """Create a QR code from data.
 
@@ -161,22 +111,15 @@ def encode(data: str, ecl: str):
 
     data_segment = get_segment_data(data)
     version = get_best_version(data_segment, mode, ecl)
+
     mode_segment = get_segment_mode(mode)
     chr_count_segment = get_segment_character_count(data, mode, version)
     terminator_segment = get_segment_terminator(data_segment, mode_segment, chr_count_segment)
-    segment = get_segment([mode_segment, chr_count_segment, data_segment, terminator_segment])
+    segment = combine_segments([mode_segment, chr_count_segment, data_segment, terminator_segment])
 
     segment_with_padding = add_padding(segment, version, ecl)
-
     data_to_encode = bits_to_bytearray(segment_with_padding)
-
-    encoded_data = _add_ecc_and_interleave(version=version, ecl=ecl, data=data_to_encode)
-
+    encoded_data = add_ecc_and_interleave(version=version, ecl=ecl, data=data_to_encode)
     all_bits = bytearray_to_bits(encoded_data)
-
-    print(f"ECL: {ecl}")
-    print(f"data: {data}")
-    print(f"Best mode: {mode}")
-    print(f"Best version:", version)
 
     return version, all_bits
