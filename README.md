@@ -1,6 +1,6 @@
 ![Status](https://img.shields.io/badge/status-under%20development-orange)
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)
-![moon](https://img.shields.io/badge/🚀🚀🚀-🌓-grey)
+![moon](https://img.shields.io/badge/🚀🚀🚀-🌓-blue)
 
 
 # QR Code Encoder
