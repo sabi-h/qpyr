@@ -8,5 +8,6 @@ def main(data, ecl="M"):
 
 
 if __name__ == "__main__":
-    url = "google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/"
-    main(url, ecl="H")
+    # data = "google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/google.comg/"
+    data = "£30,000 åßç"
+    main(data, ecl="H")

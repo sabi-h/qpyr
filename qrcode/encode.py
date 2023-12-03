@@ -27,10 +27,7 @@ def get_best_mode(data: str) -> str:
 
 
 def get_segment_data(data):
-    data_segment = ""
-    for char in data:
-        char_bits = bin(ord(char))[2:].zfill(8)
-        data_segment += char_bits
+    data_segment = "".join([bin(x)[2:].zfill(8) for x in bytearray(data, "utf-8")])
     return data_segment
 
 
@@ -38,13 +35,14 @@ def get_segment_mode(mode):
     return {"numeric": "0001", "alphanumeric": "0010", "byte": "0100"}[mode]
 
 
-def get_segment_character_count(data, mode: str, version: int):
+def get_segment_character_count(data_segment: str, mode: str, version: int):
     result = ""
+    no_of_bytes = len(data_segment) // 8
     if mode == "byte":
         if version <= 9:
-            result = bin(len(data))[2:].zfill(8)
+            result = bin(no_of_bytes)[2:].zfill(8)
         else:
-            result = bin(len(data))[2:].zfill(16)
+            result = bin(no_of_bytes)[2:].zfill(16)
     return result
 
 
@@ -111,12 +109,10 @@ def encode(data: str, ecl: str):
 
     data_segment = get_segment_data(data)
     version = get_best_version(data_segment, mode, ecl)
-
     mode_segment = get_segment_mode(mode)
-    chr_count_segment = get_segment_character_count(data, mode, version)
+    chr_count_segment = get_segment_character_count(data_segment, mode, version)
     terminator_segment = get_segment_terminator(data_segment, mode_segment, chr_count_segment)
     segment = combine_segments([mode_segment, chr_count_segment, data_segment, terminator_segment])
-
     segment_with_padding = add_padding(segment, version, ecl)
     data_to_encode = bits_to_bytearray(segment_with_padding)
     encoded_data = add_ecc_and_interleave(version=version, ecl=ecl, data=data_to_encode)
