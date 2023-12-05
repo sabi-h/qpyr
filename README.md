@@ -8,7 +8,12 @@ Modern Python library for generating QR Codes written with emphasis on readabili
 
 
 ## Basic usage
-    python -m qpyr.main
+To use the package, import and call the `main` function as follows:
+
+```python
+    from qpyr.main import main
+    main("google.com")
+```
 
 
 ## Contributing
