@@ -1,6 +1,6 @@
 import pytest
 
-from qrcode.encode import get_best_mode, add_padding, get_best_version
+from qpyr.encode import get_best_mode, add_padding, get_best_version
 
 
 @pytest.mark.parametrize(

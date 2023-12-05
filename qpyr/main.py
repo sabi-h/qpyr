@@ -1,5 +1,5 @@
-from qrcode.encode import encode
-from qrcode.draw import draw
+from qpyr.encode import encode
+from qpyr.draw import draw
 
 
 def main(data, ecl="M"):

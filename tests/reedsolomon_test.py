@@ -1,4 +1,4 @@
-from qrcode.error_correction import add_ecc_and_interleave
+from qpyr.error_correction import add_ecc_and_interleave
 
 
 def test__add_ecc_and_interleave():

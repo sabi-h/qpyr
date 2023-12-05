@@ -1,4 +1,4 @@
-from qrcode.draw import _get_alignment_pattern_coords, get_alignment_pattern_positions, get_format_information
+from qpyr.draw import _get_alignment_pattern_coords, get_alignment_pattern_positions, get_format_information
 
 
 def test_get_format_information():
