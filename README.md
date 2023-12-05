@@ -3,9 +3,8 @@
 ![moon](https://img.shields.io/badge/🚀🚀🚀-🌓-blue)
 
 
-# QR Code Encoder
-Python library for generating QR Codes written with emphasis on readability. Ideal for learning because of code readability. Future goal is to make it production ready 🚀🚀🚀
-
+# QPYR
+Python library for generating QR Codes written with emphasis on readability. Ideal for learning because of code readability. Future goal is to make it production ready 🚀🚀🚀.
 
 
 ## Basic usage
