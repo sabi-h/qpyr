@@ -1,4 +1,4 @@
-from qrcode.utils import get_total_data_capacity_bytes
+from qpyr.utils import get_total_data_capacity_bytes
 
 
 def test_get_data_codewords_per_block():
