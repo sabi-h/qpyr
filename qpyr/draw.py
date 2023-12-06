@@ -1,8 +1,3 @@
-"""
-TODO:
-- Use bytearray instead of strings
-"""
-
 from functools import partial
 from typing import Callable, Dict, List, Optional, Tuple, TypeAlias
 
@@ -410,10 +405,3 @@ def draw(binary_string: str, version: int, ecl: str, quiet_zone_border: int = 4)
 
     grid = add_quiet_zone(grid, quiet_zone_border)
     draw_grid_with_pil(grid)
-
-
-if __name__ == "__main__":
-    data = "google.com"
-    ecl = "H"
-    version, binary_str = encode(data, ecl=ecl)
-    draw(binary_str, version, ecl=ecl)
