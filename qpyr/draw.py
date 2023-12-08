@@ -94,14 +94,15 @@ def get_seperator_pattern(grid_size) -> CoordinateValueMap:
 
 
 def add_quiet_zone(grid, border: int = 4):
-    horizontal_zone = np.zeros((grid.shape[0], border))
+    horizontal_zone = np.zeros((grid.shape[0], border), dtype=int)
     grid = np.hstack((grid, horizontal_zone))
     grid = np.hstack((horizontal_zone, grid))
 
-    vertical_zone = np.zeros((border, grid.shape[1]))
+    vertical_zone = np.zeros((border, grid.shape[1]), dtype=int)
     grid = np.vstack((grid, vertical_zone))
     grid = np.vstack((vertical_zone, grid))
 
+    assert grid.dtype.name == "int64"
     return grid
 
 
@@ -403,5 +404,7 @@ def draw(binary_string: str, version: int, ecl: str, quiet_zone_border: int = 4)
     format_information_placement = get_format_placement(grid_size, format_information)
     masked_grid = override_grid(masked_grid, format_information_placement)
 
-    grid = add_quiet_zone(grid, quiet_zone_border)
-    draw_grid_with_pil(grid)
+    masked_grid = add_quiet_zone(masked_grid, quiet_zone_border)
+    draw_grid_with_pil(masked_grid)
+
+    return masked_grid
