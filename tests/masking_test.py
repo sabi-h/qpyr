@@ -2,7 +2,7 @@ from typing import Callable
 
 import numpy as np
 
-from qpyr.data_masking import (
+from qpyr.masking import (
     get_adjacent_modules_penalty,
     get_masks,
     get_proportion_penalty,

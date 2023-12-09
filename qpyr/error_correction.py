@@ -1,7 +1,7 @@
-from typing import List, Sequence
+from typing import List
 
 from qpyr.static import ECC_CODEWORDS_PER_BLOCK, NUM_ERROR_CORRECTION_BLOCKS
-from qpyr.utils import get_num_raw_data_modules, bits_to_bytearray, bytearray_to_bits
+from qpyr.utils import get_num_raw_data_modules
 
 
 def _reed_solomon_compute_divisor(degree: int) -> bytes:

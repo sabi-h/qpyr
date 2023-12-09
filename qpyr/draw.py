@@ -5,14 +5,13 @@ import numpy as np
 from numpy.typing import NDArray
 from PIL import Image, ImageDraw
 
-from qpyr.data_masking import (
+from qpyr.masking import (
     get_adjacent_modules_penalty,
     get_finder_pattern_penalty,
     get_masks,
     get_proportion_penalty,
     get_same_color_block_penalty,
 )
-from qpyr.encode import encode
 from qpyr.utils import get_grid_size
 
 

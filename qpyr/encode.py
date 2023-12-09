@@ -72,14 +72,6 @@ def get_best_version(data_segment: str, mode: str, ecl: str) -> int:
 
 
 def add_padding(data: str, version: int, ecl: str) -> str:
-    """Add padding to data segment.
-
-    Args:
-        data (str): data segment
-
-    Returns:
-        str: padded data segment
-    """
     data_length = len(data)
     bit_padding_required = (8 - (data_length % 8)) % 8
     data = data + "0" * bit_padding_required
