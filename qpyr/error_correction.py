@@ -84,14 +84,3 @@ def add_ecc_and_interleave(version: int, ecl: str, data: bytearray) -> bytearray
                 result.append(blk[i])
     assert len(result) == rawcodewords
     return result
-
-
-if __name__ == "__main__":
-    data = "01000000010101101000011001010110110001101100011011110000111011000001000111101100000100011110110000010001111011000001000111101100"
-    data = bits_to_bytearray(data)
-    data_and_ecc = add_ecc_and_interleave(version=1, ecl="M", data=data)
-    data_and_ecc = bytearray_to_bits(data_and_ecc)
-    assert (
-        data_and_ecc
-        == "0100000001010110100001100101011011000110110001101111000011101100000100011110110000010001111011000001000111101100000100011110110000010110010011111101111111010100100011000001000111010001010111000010111110110111"
-    )

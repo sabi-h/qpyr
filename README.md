@@ -4,7 +4,11 @@
 
 
 # QPYR
-Modern Python library for generating QR Codes written with emphasis on readability. Ideal for learning QR Code standard at a deeper level. Production ready in near future 🚀🚀🚀.
+Circumference of a circle is $2\pi r$, what is the circumference of a QR Code?
+
+---
+
+Python library for generating QR Codes, written with emphasis on readability. Ideal for learning QR Code standard at a deeper level. Production ready in near future 🚀🚀🚀.
 
 
 ## Basic usage
@@ -14,7 +18,7 @@ To use the package, import and call the `main` function as follows:
 import qpyr
 qpyr.main("google.com")
 ```
-<img src="./qrcode-example.png" alt="QR Code" width="200" height="200"/>
+<img src="https://github.com/sabih-h/qpyr/blob/cleanup/docs/static/qrcode-example.png" alt="QR Code" width="200" height="200"/>
 
 
 ## Contributing

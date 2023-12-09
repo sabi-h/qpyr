@@ -1,7 +1,3 @@
-"""
-TODO:
-- Penalty points function has a bug.
-"""
 import math
 from typing import Callable, List
 
@@ -141,13 +137,3 @@ def get_proportion_penalty(grid):
     rating = int(deviation / 5)
     result = rating * PenaltyPoint.N4
     return result
-
-
-if __name__ == "__main__":
-    grid = np.array(
-        [
-            [0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1],
-        ]
-    )
-    points = get_finder_pattern_penalty(grid)
-    print(f"{points=}")
