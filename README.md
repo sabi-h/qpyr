@@ -6,6 +6,8 @@
 # QPYR
 Circumference of a circle is $2\pi r$, what is the circumference of a QR Code?
 
+---
+
 Python library for generating QR Codes, written with emphasis on readability. Ideal for learning QR Code standard at a deeper level. Production ready in near future 🚀🚀🚀.
 
 
