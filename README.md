@@ -15,7 +15,7 @@ To use the package, import and call the `main` function as follows:
 import qpyr
 qpyr.main("google.com")
 ```
-<img src="https://github.com/sabih-h/qpyr/blob/cleanup/docs/static/qrcode-example.png" alt="QR Code" width="200" height="200"/>
+<img src="https://raw.githubusercontent.com/sabih-h/qpyr/cbeb109d266dea0e1052ab5fa720c4a2edbf1983/docs/static/qrcode-example.png" alt="QR Code" width="200" height="200"/>
 
 
 ## Contributing
