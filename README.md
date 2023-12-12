@@ -2,7 +2,6 @@
 [![PyPI Latest Release](https://img.shields.io/pypi/v/qpyr)](https://pypi.org/project/qpyr/)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/qpyr)
 ![PyPI - License](https://img.shields.io/pypi/l/qpyr)
-![moon](https://img.shields.io/badge/🚀🚀🚀-🌓-blue)
 
 
 # QPYR
