@@ -1,14 +1,15 @@
 import itertools
 import re
 
-from qpyr.error_correction import add_ecc_and_interleave, get_num_raw_data_modules
-from qpyr.utils import (
+from qpyr._lib.error_correction import add_ecc_and_interleave
+from qpyr._lib.static import ECC_CODEWORDS_PER_BLOCK, NUM_ERROR_CORRECTION_BLOCKS
+from qpyr._lib.utils import (
     bits_to_bytearray,
     bytearray_to_bits,
+    get_num_raw_data_modules,
     get_segment_character_bits_length,
     get_total_data_capacity_bytes,
 )
-from qpyr.static import ECC_CODEWORDS_PER_BLOCK, NUM_ERROR_CORRECTION_BLOCKS
 
 
 def get_best_mode(data: str) -> str:

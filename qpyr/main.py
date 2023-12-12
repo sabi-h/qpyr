@@ -1,5 +1,5 @@
-from qpyr.encode import encode
-from qpyr.draw import draw
+from qpyr._lib.encode import encode
+from qpyr._lib.draw import draw
 
 
 def main(data, ecl="M"):
