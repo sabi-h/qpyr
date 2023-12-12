@@ -1,7 +1,7 @@
 ![Status](https://img.shields.io/badge/status-under%20development-lightblue)
 [![PyPI Latest Release](https://img.shields.io/pypi/v/qpyr)](https://pypi.org/project/qpyr/)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/qpyr)
-![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)
+![PyPI - License](https://img.shields.io/pypi/l/qpyr)
 ![moon](https://img.shields.io/badge/🚀🚀🚀-🌓-blue)
 
 
