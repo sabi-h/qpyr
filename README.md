@@ -1,13 +1,10 @@
 ![Status](https://img.shields.io/badge/status-under%20development-orange)
+[![PyPI Latest Release](https://img.shields.io/pypi/v/qpyr)](https://pypi.org/project/qpyr/)
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)
 ![moon](https://img.shields.io/badge/🚀🚀🚀-🌓-blue)
 
 
 # QPYR
-Circumference of a circle is $2\pi r$, what is the circumference of a QR Code?
-
----
-
 Python library for generating QR Codes, written with emphasis on readability. Ideal for learning QR Code standard at a deeper level. Production ready in near future 🚀🚀🚀.
 
 
