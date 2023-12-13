@@ -1,5 +1,4 @@
-from functools import partial
-from typing import Callable, Dict, List, Optional, Tuple, TypeAlias
+from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -12,11 +11,10 @@ from qpyr._lib.data_masking import (
     get_proportion_penalty,
     get_same_color_block_penalty,
 )
-from qpyr._lib.encode import encode
 from qpyr._lib.utils import get_grid_size
 
 
-CoordinateValueMap: TypeAlias = Dict[Tuple[int, int], int]
+CoordinateValueMap = Dict[Tuple[int, int], int]
 
 WHITE = 0
 BLACK = 1
