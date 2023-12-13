@@ -2,6 +2,7 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/qpyr)
 ![GitHub last commit (branch)](https://img.shields.io/github/last-commit/sabih-h/qpyr/master)
 ![PyPI - License](https://img.shields.io/pypi/l/qpyr)
+[![Build](https://github.com/sabih-h/qpyr/actions/workflows/python-app.yml/badge.svg)](https://github.com/sabih-h/qpyr/actions/workflows/python-app.yml)
 
 
 # QPYR - QR Code Generation in Python
