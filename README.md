@@ -1,6 +1,6 @@
-![Status](https://img.shields.io/badge/status-under%20development-lightblue)
 [![PyPI Latest Release](https://img.shields.io/pypi/v/qpyr)](https://pypi.org/project/qpyr/)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/qpyr)
+![GitHub last commit (branch)](https://img.shields.io/github/last-commit/sabih-h/qpyr/master)
 ![PyPI - License](https://img.shields.io/pypi/l/qpyr)
 
 
