@@ -4,8 +4,8 @@
 ![PyPI - License](https://img.shields.io/pypi/l/qpyr)
 
 
-# QPYR
-Python library for generating QR Codes, written with emphasis on readability ad correctness. Supports all versions of QR Codes from 1 - 40 🚀🚀🚀.
+# QPYR - QR Code Generation in Python
+Python package designed for creating QR codes with support for all QR code versions from 1 to 40. Designed for developers looking for a simple way to integrate QR code generation into their Python applications 🚀🚀🚀.
 
 
 ## Basic usage
