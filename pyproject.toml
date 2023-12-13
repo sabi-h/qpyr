@@ -5,7 +5,7 @@ description = "Create QR Codes."
 authors = ["Sabi"]
 license = "Apache-2.0"
 readme = "README.md"
-keywords = ["qr", "qrcode", "qrcode-generator", "qr-code]
+keywords = ["qr", "qrcode", "qrcode-generator", "qr-code"]
 
 [tool.poetry.urls]
 "Source" = "https://github.com/sabih-h/qpyr"
