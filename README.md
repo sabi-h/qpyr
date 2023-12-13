@@ -5,7 +5,7 @@
 
 
 # QPYR
-Python library for generating QR Codes, written with emphasis on readability. Ideal for learning QR Code standard at a deeper level. Production ready in near future 🚀🚀🚀.
+Python library for generating QR Codes, written with emphasis on readability ad correctness. Supports all versions of QR Codes from 1 - 40 🚀🚀🚀.
 
 
 ## Basic usage
