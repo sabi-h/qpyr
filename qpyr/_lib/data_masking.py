@@ -84,36 +84,13 @@ def _calculate_finder_penalty(array: NDArray) -> int:
     return result
 
 
-def _calculate_finder_penalty_2(array: NDArray) -> int:
-    pattern = [1, 0, 1, 1, 1, 0, 1]
-    light_area = [0, 0, 0, 0]
-
-    pattern1 = light_area + pattern
-    pattern2 = pattern + light_area
-
-    total_pattern_length = len(pattern1)
-
-    patterns_found = 0
-
-    for i in range(len(array) - total_pattern_length + 1):
-        sub_array = array[i : i + total_pattern_length]
-        if np.array_equal(sub_array, pattern1):
-            patterns_found += 1
-
-        if np.array_equal(sub_array, pattern2):
-            patterns_found += 1
-
-    result = patterns_found * PenaltyPoint.N3
-    return result
-
-
 def get_finder_pattern_penalty(grid):
     result = 0
     for row in grid:
-        result += _calculate_finder_penalty_2(row)
+        result += _calculate_finder_penalty(row)
 
     for col in grid.T:
-        result += _calculate_finder_penalty_2(col)
+        result += _calculate_finder_penalty(col)
 
     return result
 
