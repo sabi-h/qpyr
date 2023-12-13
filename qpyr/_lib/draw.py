@@ -39,15 +39,7 @@ def get_timing_pattern(grid_size: int = 21) -> CoordinateValueMap:
     return result
 
 
-def create_row(fixed_row_index, col_start, col_end, value):
-    return {(fixed_row_index, col): value for col in range(col_start, col_end)}
-
-
-def create_col(fixed_col_index, row_start, row_end, value):
-    return {(row, fixed_col_index): value for row in range(row_start, row_end)}
-
-
-def finder_pattern_generator(row, col, grid_size) -> CoordinateValueMap:
+def _finder_and_seperator_pattern_generator(row, col, grid_size) -> CoordinateValueMap:
     result = {}
     for r in range(-1, 8):
         if row + r <= -1 or grid_size <= row + r:
@@ -57,40 +49,18 @@ def finder_pattern_generator(row, col, grid_size) -> CoordinateValueMap:
             if col + c <= -1 or grid_size <= col + c:
                 continue
 
-            if (0 <= r <= 6 and c in {0, 6}) or (0 <= c <= 6 and r in {0, 6}) or (2 <= r <= 4 and 2 <= c <= 4):
+            if (0 <= r <= 6 and c in (0, 6)) or (0 <= c <= 6 and r in (0, 6)) or (2 <= r <= 4 and 2 <= c <= 4):
                 result[(row + r, col + c)] = BLACK
             else:
                 result[(row + r, col + c)] = WHITE
     return result
 
 
-def get_finder_patterns(
-    finder_pattern_generator: Callable[[int, int, int], CoordinateValueMap], grid_size
-) -> CoordinateValueMap:
-    top_left = finder_pattern_generator(0, 0, grid_size)
-    bottom_left = finder_pattern_generator(grid_size - 7, 0, grid_size)
-    top_right = finder_pattern_generator(0, grid_size - 7, grid_size)
+def get_finder_and_seperator(grid_size) -> CoordinateValueMap:
+    top_left = _finder_and_seperator_pattern_generator(0, 0, grid_size)
+    bottom_left = _finder_and_seperator_pattern_generator(grid_size - 7, 0, grid_size)
+    top_right = _finder_and_seperator_pattern_generator(0, grid_size - 7, grid_size)
     return {**top_left, **bottom_left, **top_right}
-
-
-def get_seperator_pattern(grid_size) -> CoordinateValueMap:
-    length = 8
-    length_index = length - 1
-
-    create_white_row = partial(create_row, value=WHITE)
-    create_white_col = partial(create_col, value=WHITE)
-
-    top_left_row = create_white_row(fixed_row_index=length_index, col_start=0, col_end=length)
-    top_left_col = create_white_col(fixed_col_index=length_index, row_start=0, row_end=length)
-
-    top_right_row = create_white_row(fixed_row_index=length_index, col_start=grid_size - length, col_end=grid_size)
-    top_right_col = create_white_col(fixed_col_index=grid_size - length, row_start=0, row_end=length)
-
-    bottom_right_row = create_white_row(fixed_row_index=grid_size - length, col_start=0, col_end=length)
-    bottom_right_col = create_white_col(fixed_col_index=length_index, row_start=grid_size - length, row_end=grid_size)
-
-    result = {**top_left_row, **top_left_col, **top_right_row, **top_right_col, **bottom_right_row, **bottom_right_col}
-    return result
 
 
 def add_quiet_zone(grid, border: int = 4):
@@ -143,7 +113,7 @@ def draw_grid_with_pil(grid: NDArray, cell_size: int = 20, outline: Optional[str
     img.show()
 
 
-def iterate_over_grid(grid_size) -> List[Tuple[int, int]]:
+def _iterate_over_grid(grid_size) -> List[Tuple[int, int]]:
     """Iterates over all grid cells in zig-zag pattern and returns an iterator of tuples (row, col)
     in order, starting from bottom right."""
     result = []
@@ -171,9 +141,9 @@ def iterate_over_grid(grid_size) -> List[Tuple[int, int]]:
     return result
 
 
-def get_codeword_placement(binary_str, grid, grid_iterator) -> CoordinateValueMap:
+def get_codeword_placement(binary_str, grid, grid_size) -> CoordinateValueMap:
     result = {}
-
+    grid_iterator = _iterate_over_grid(grid_size)
     for row, col in grid_iterator:
         if not binary_str:
             # Pad with white blocks.
@@ -299,7 +269,7 @@ def get_alignment_patterns(positions) -> CoordinateValueMap:
 
 def get_version_information(version: int) -> Optional[int]:
     if version <= 6:
-        return None
+        return
 
     generator_polynomial = 7973
 
@@ -345,11 +315,10 @@ def draw(binary_string: str, version: int, ecl: str, quiet_zone_border: int = 4)
     grid_size = get_grid_size(version)
 
     version_information = get_version_information(version)
-    version_information_placement = get_version_placement(version_information, grid_size)
+    version_information_pattern = get_version_placement(version_information, grid_size)
 
     dummy_format_information = get_dummy_format_information(grid_size)
-    finder_patterns = get_finder_patterns(finder_pattern_generator, grid_size)
-    seperator_pattern = get_seperator_pattern(grid_size)
+    finder_and_seperator_pattern = get_finder_and_seperator(grid_size)
     timing_pattern = get_timing_pattern(grid_size)
 
     alignment_pattern_coords = _get_alignment_pattern_coords(version, grid_size)
@@ -360,15 +329,11 @@ def draw(binary_string: str, version: int, ecl: str, quiet_zone_border: int = 4)
 
     grid = override_grid(grid, dummy_format_information)
     grid = override_grid(grid, timing_pattern)
-    grid = override_grid(grid, finder_patterns)
-    grid = override_grid(grid, seperator_pattern)
-    grid = override_grid(grid, version_information_placement)
+    grid = override_grid(grid, finder_and_seperator_pattern)
+    grid = override_grid(grid, version_information_pattern)
     grid = override_grid(grid, alignment_pattern)
-    grid = override_grid(grid, version_information_placement)
 
-    grid_iterator = iterate_over_grid(grid_size)
-    codeword_placement = get_codeword_placement(binary_string, grid, grid_iterator)
-
+    codeword_placement = get_codeword_placement(binary_string, grid, grid_size)
     grid = override_grid(grid, codeword_placement)
 
     masks = get_masks()
