@@ -1,5 +1,5 @@
-[![PyPI Latest Release](https://img.shields.io/pypi/v/qpyr)](https://pypi.org/project/qpyr/)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/qpyr)
+[![PyPI Latest Release](https://img.shields.io/pypi/v/qpyr)](https://pypi.org/project/qpyr/)
 ![PyPI - License](https://img.shields.io/pypi/l/qpyr)
 [![codecov](https://codecov.io/gh/sabih-h/qpyr/graph/badge.svg?token=YLOSBSXWJJ)](https://codecov.io/gh/sabih-h/qpyr)
 
