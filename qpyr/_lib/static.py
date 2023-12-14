@@ -1,6 +1,13 @@
 from typing import Sequence, Dict
 
 
+class ColorValue:
+    WHITE = 0
+    BLACK = 1
+    DEFAULT_VALUE = -1
+    DUMMY_VALUE = -2
+
+
 # fmt: off
 
 TOTAL_NUMBER_OF_CODEWORDS: Sequence[int] = (
