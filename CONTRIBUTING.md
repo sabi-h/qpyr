@@ -5,7 +5,7 @@
 git clone git@github.com:sabi-h/qpyr.git
 ```
 
-### Install Dependencies
+### Install Dependencies
 ```sh
 poetry install
 ```
