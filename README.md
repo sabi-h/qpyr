@@ -6,9 +6,13 @@
 # QPYR - QR Code Generation in Python
 Python package designed for creating QR codes with support for all QR code versions from 1 to 40. Designed for developers looking for a simple way to integrate QR code generation into their Python applications 🚀🚀🚀.
 
+## Installation
+```sh
+pip install qpyr
+```
 
 ## Basic usage
-To use the package, import and call the `main` function as follows:
+To use the package, import and call the `main` function:
 
 ```python
 # Save qrcode as image
