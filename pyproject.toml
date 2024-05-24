@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qpyr"
-version = "0.1.18"
+version = "0.1.19"
 description = "Create QR Codes."
 authors = ["Sabi"]
 license = "Apache-2.0"
@@ -9,7 +9,6 @@ keywords = ["qr", "qrcode", "qrcode-generator", "qr-code"]
 
 [tool.poetry.urls]
 "Source" = "https://github.com/sabih-h/qpyr"
-"Documentation" = "https://sabih-h.github.io/qpyr/"
 
 [tool.poetry.dependencies]
 python = "^3.9"
